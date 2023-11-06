@@ -4,10 +4,11 @@ use std::time::Instant;
 
 fn solve<
     Intermediate,
-    Result : Display,
+    Result1 : Display,
+    Result2 : Display,
     Parse: FnOnce(String) -> Intermediate,
-    Part1: FnOnce(&Intermediate) -> Result,
-    Part2: FnOnce(&Intermediate) -> Result>(
+    Part1: FnOnce(&Intermediate) -> Result1,
+    Part2: FnOnce(&Intermediate) -> Result2>(
     filename: &str,
     parse: Parse,
     solve_part_1: Part1,
@@ -31,6 +32,14 @@ fn solve<
         after_p1 - start,
         after_p2 - after_p1
     )
+}
+
+fn unparsed(str: String) -> String {
+    str
+}
+
+fn unsolved<T>(_input: &T) -> &'static str {
+    "unsolved"
 }
 
 
