@@ -1,12 +1,47 @@
+#![feature(never_type)]
+
+use std::error::Error;
 use std::fmt::Display;
 use std::fs;
 use std::time::Instant;
 
+trait OutputAndRest {
+    type Output : ?Sized;
+
+    fn output(&self) -> &Self::Output;
+    fn rest(&self) -> &str;
+}
+
+impl OutputAndRest for String {
+    type Output = str;
+    fn output(&self) -> &Self::Output {
+        &self
+    }
+
+    fn rest(&self) -> &str {
+        ""
+    }
+}
+
+impl <T> OutputAndRest for (&str, T) {
+    type Output = T;
+
+    fn output(&self) -> &Self::Output {
+        &self.1
+    }
+
+    fn rest(&self) -> &str {
+        &self.0
+    }
+}
+
 fn solve<
-    Intermediate,
+    Intermediate: ?Sized,
+    Err : Error,
+    ParseResult: OutputAndRest<Output=Intermediate>,
     Result1 : Display,
     Result2 : Display,
-    Parse: FnOnce(String) -> Intermediate,
+    Parse: FnOnce(String) -> Result<ParseResult, Err>,
     Part1: FnOnce(&Intermediate) -> Result1,
     Part2: FnOnce(&Intermediate) -> Result2>(
     filename: &str,
@@ -15,30 +50,44 @@ fn solve<
     solve_part_2: Part2
 ){
     let path = format!("inputfiles/{}", filename);
-    let contents = fs::read(path).expect("Input file readable");
-    let input = String::from_utf8(contents).expect("valid utf8");
-    let prepared = parse(input);
+    let contents = fs::read(&path);
 
-    let start = Instant::now();
-    let solution_part1 = solve_part_1(&prepared);
-    let after_p1 = Instant::now();
-    let solution_part2 = solve_part_2(&prepared);
-    let after_p2 = Instant::now();
+    if let Ok(contents) = contents {
+        let input = String::from_utf8(contents).expect("valid utf8");
+        let prepared = parse(input);
 
-    println!("Solved {}, part1: {}, part2: {} ({:?} part 1, {:?} part 2)",
-        filename,
-        solution_part1,
-        solution_part2,
-        after_p1 - start,
-        after_p2 - after_p1
-    )
+        if let Ok(parsed) = prepared {
+            if !parsed.rest().is_empty() {
+                eprintln!("Input was not completely parsed, rest is '{}'", parsed.rest())
+            }
+
+            let start = Instant::now();
+            let solution_part1 = solve_part_1(parsed.output());
+            let after_p1 = Instant::now();
+            let solution_part2 = solve_part_2(parsed.output());
+            let after_p2 = Instant::now();
+
+            println!("Solved {}, part1: {}, part2: {} ({:?} part 1, {:?} part 2)",
+                     filename,
+                     solution_part1,
+                     solution_part2,
+                     after_p1 - start,
+                     after_p2 - after_p1
+            )
+        } else  {
+            eprintln!("Could not parse input: {}", prepared.err().unwrap())
+        }
+
+    } else {
+        eprintln!("Could not read input {}, due to {}", path, contents.err().unwrap())
+    }
 }
 
-fn unparsed(str: String) -> String {
-    str
+fn unparsed(str: String) -> Result<String, !> {
+    Ok(str)
 }
 
-fn unsolved<T>(_input: &T) -> &'static str {
+fn unsolved<T: ?Sized>(_input: &T) -> &'static str {
     "unsolved"
 }
 
