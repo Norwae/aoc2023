@@ -41,6 +41,26 @@ impl <T> OutputAndRest for (&str, T) {
     }
 }
 
+macro_rules! solution {
+    () => {
+        solution!(crate::unparsed);
+    };
+    ($parse:path) => {
+        solution!($parse, crate::unsolved);
+    };
+    ($parse:path, $solution:path) => {
+        solution!($parse, $solution, crate::no_part_2);
+    };
+    ($parse:path, $part1:path, $part2:path) => {
+        pub fn solve(ctx: &mut crate::Context) {
+            let path = module_path!();
+            let cutoff = path.rfind("::").unwrap();
+            let filename = &path[cutoff + 2..];
+            crate::solve(ctx, filename, $parse, $part1, $part2);
+        }
+    };
+}
+
 fn solve<
     Intermediate: ?Sized,
     Err : Error,
@@ -82,8 +102,8 @@ fn solve<
                      after_p1 - after_parse,
                      after_p2 - after_p1
             );
-            context.total_duration += (after_p2 - start);
-            context.non_parse_duration += (after_p2 - after_parse)
+            context.total_duration += after_p2 - start;
+            context.non_parse_duration += after_p2 - after_parse;
         } else  {
             eprintln!("Could not parse input: {}", prepared.err().unwrap())
         }
@@ -99,6 +119,9 @@ fn unparsed(str: String) -> Result<String, !> {
 
 fn unsolved<T: ?Sized>(_input: &T) -> &'static str {
     "unsolved"
+}
+fn no_part_2<T: ?Sized>(_input: &T) -> &'static str {
+    "No part 2"
 }
 
 
