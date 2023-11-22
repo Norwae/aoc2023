@@ -3,7 +3,13 @@
 use std::error::Error;
 use std::fmt::Display;
 use std::fs;
-use std::time::Instant;
+use std::time::{Duration, Instant};
+
+#[derive(Debug, Default)]
+pub struct Context {
+    total_duration: Duration,
+    non_parse_duration: Duration
+}
 
 trait OutputAndRest {
     type Output : ?Sized;
@@ -44,11 +50,13 @@ fn solve<
     Parse: FnOnce(String) -> Result<ParseResult, Err>,
     Part1: FnOnce(&Intermediate) -> Result1,
     Part2: FnOnce(&Intermediate) -> Result2>(
+    context: &mut Context,
     filename: &str,
     parse: Parse,
     solve_part_1: Part1,
     solve_part_2: Part2
 ){
+    let start = Instant::now();
     let path = format!("inputfiles/{}", filename);
     let contents = fs::read(&path);
 
@@ -61,7 +69,7 @@ fn solve<
                 eprintln!("Input was not completely parsed, rest is '{}'", parsed.rest())
             }
 
-            let start = Instant::now();
+            let after_parse = Instant::now();
             let solution_part1 = solve_part_1(parsed.output());
             let after_p1 = Instant::now();
             let solution_part2 = solve_part_2(parsed.output());
@@ -71,9 +79,11 @@ fn solve<
                      filename,
                      solution_part1,
                      solution_part2,
-                     after_p1 - start,
+                     after_p1 - after_parse,
                      after_p2 - after_p1
-            )
+            );
+            context.total_duration += (after_p2 - start);
+            context.non_parse_duration += (after_p2 - after_parse)
         } else  {
             eprintln!("Could not parse input: {}", prepared.err().unwrap())
         }
@@ -100,9 +110,9 @@ fn main() {
         day1::solve
     ];
 
-    let start = Instant::now();
+    let mut context = Context::default();
     for ptr in day_pointers {
-        ptr()
+        ptr(&mut context)
     }
-    println!("AoC so far, including io: {:?}", Instant::now() - start)
+    println!("AoC so far, including io: {:?} total, {:?} without overhead", context.total_duration, context.non_parse_duration)
 }
