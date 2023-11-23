@@ -36,6 +36,4 @@ fn part2(input: &Vec<usize>) -> usize {
     buffer[1..].iter().cloned().sum()
 }
 
-pub fn solve(ctx: &mut crate::Context) {
-    crate::solve(ctx, "day1", parse, part1, part2)
-}
+solution!(parse, part1, part2);
