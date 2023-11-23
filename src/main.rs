@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fs;
 use std::fmt::Display;
 use std::time::{Duration, Instant};
+use nom::IResult;
 
 #[derive(Debug, Default)]
 pub struct Context {
@@ -9,28 +10,6 @@ pub struct Context {
     non_parse_duration: Duration,
 }
 
-trait OutputAndRest<A> {
-    fn rest(&self) -> &str;
-    fn output(self) -> A;
-}
-
-impl<T> OutputAndRest<T> for (&str, T) {
-    fn rest(&self) -> &str {
-        self.0
-    }
-
-    fn output(self) -> T {
-        self.1
-    }
-}
-
-struct SimpleError(String);
-
-impl<E: Error> From<E> for SimpleError {
-    fn from(value: E) -> Self {
-        SimpleError(value.to_string())
-    }
-}
 macro_rules! solution {
     () => {
         solution!(crate::unparsed);
@@ -53,19 +32,18 @@ macro_rules! solution {
 
 fn parse_report_errors<
     Parsed,
-    RestInfo: OutputAndRest<Parsed>,
-    Parser: FnOnce(&str) -> Result<RestInfo, SimpleError>
+    Parser: FnOnce(&str) -> IResult<&str, Parsed>
 >(input: &str, p: Parser) -> Option<Parsed> {
     let result = p(input);
     return match result {
-        Ok(rest_info) => {
-            if !rest_info.rest().is_empty() {
-                eprintln!("Dangling input: '{}', ignoring", &rest_info.rest())
+        Ok((rest, parsed)) => {
+            if !rest.is_empty() {
+                eprintln!("Dangling input: '{}', ignoring", rest)
             }
-            Some(rest_info.output())
+            Some(parsed)
         }
         Err(error) => {
-            eprintln!("Could not parse input: {}", error.0);
+            eprintln!("Could not parse input: {}", error);
             None
         }
     };
@@ -73,10 +51,9 @@ fn parse_report_errors<
 
 fn solve<
     Intermediate,
-    ParseResult: OutputAndRest<Intermediate>,
     Result1: Display,
     Result2: Display,
-    Parse: FnOnce(&str) -> Result<ParseResult, SimpleError>,
+    Parse: FnOnce(&str) -> IResult<&str, Intermediate>,
     Part1: FnOnce(&Intermediate) -> Result1,
     Part2: FnOnce(&Intermediate) -> Result2>(
     context: &mut Context,
@@ -114,8 +91,8 @@ fn solve<
     }
 }
 
-fn unparsed(str: String) -> Result<String, String> {
-    Ok(str)
+fn unparsed(str: String) -> IResult<&'static str, String> {
+    Ok(("", str))
 }
 
 fn unsolved<T: ?Sized>(_input: &T) -> &'static str {

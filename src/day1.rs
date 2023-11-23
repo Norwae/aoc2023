@@ -4,7 +4,6 @@ use nom::combinator::{map, map_res};
 use nom::IResult;
 use nom::multi::{many1, separated_list1};
 use nom::sequence::terminated;
-use crate::SimpleError;
 
 
 fn food_list(input: &str) -> IResult<&str, usize> {
@@ -14,7 +13,7 @@ fn food_list(input: &str) -> IResult<&str, usize> {
     )(input)
 }
 
-fn parse(input: &str) -> Result<(&str, Vec<usize>), SimpleError> {
+fn parse(input: &str) -> IResult<&str, Vec<usize>> {
     Ok(separated_list1(tag("\n"), food_list)(&input)?)
 }
 
