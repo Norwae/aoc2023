@@ -14,7 +14,7 @@ fn food_list(input: &str) -> IResult<&str, usize> {
     )(input)
 }
 
-fn parse(input: &str) ->Result<(&str, Vec<usize>), SimpleError> {
+fn parse(input: &str) -> Result<(&str, Vec<usize>), SimpleError> {
     Ok(separated_list1(tag("\n"), food_list)(&input)?)
 }
 

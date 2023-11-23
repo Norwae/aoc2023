@@ -9,13 +9,13 @@ pub struct Context {
     non_parse_duration: Duration,
 }
 
-trait OutputAndRest<'a, A> {
-    fn rest(&self) -> &'a str;
+trait OutputAndRest<A> {
+    fn rest(&self) -> &str;
     fn output(self) -> A;
 }
 
-impl <'a, T> OutputAndRest<'a, T> for (&'a str, T) {
-    fn rest(&self) -> &'a str {
+impl<T> OutputAndRest<T> for (&str, T) {
+    fn rest(&self) -> &str {
         self.0
     }
 
@@ -52,14 +52,13 @@ macro_rules! solution {
 }
 
 fn parse_report_errors<
-    'a,
     Parsed,
-    RestInfo: OutputAndRest<'a, Parsed>,
+    RestInfo: OutputAndRest<Parsed>,
     Parser: FnOnce(&str) -> Result<RestInfo, SimpleError>
->(input: &'a str, p: Parser) -> Option<Parsed> {
+>(input: &str, p: Parser) -> Option<Parsed> {
     let result = p(input);
     return match result {
-        Ok(rest_info) => {;
+        Ok(rest_info) => {
             if !rest_info.rest().is_empty() {
                 eprintln!("Dangling input: '{}', ignoring", &rest_info.rest())
             }
@@ -74,10 +73,10 @@ fn parse_report_errors<
 
 fn solve<
     Intermediate,
-    ParseResult: for<'a> OutputAndRest<'a, Intermediate>,
+    ParseResult: OutputAndRest<Intermediate>,
     Result1: Display,
     Result2: Display,
-    Parse: for<'a> FnOnce(&'a str) -> Result<ParseResult, SimpleError>,
+    Parse: FnOnce(&str) -> Result<ParseResult, SimpleError>,
     Part1: FnOnce(&Intermediate) -> Result1,
     Part2: FnOnce(&Intermediate) -> Result2>(
     context: &mut Context,
