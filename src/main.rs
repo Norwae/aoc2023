@@ -91,8 +91,8 @@ fn solve<
     }
 }
 
-fn unparsed(str: String) -> IResult<&'static str, String> {
-    Ok(("", str))
+fn unparsed(str: &str) -> IResult<&str, String> {
+    Ok(("", str.to_string()))
 }
 
 fn unsolved<T: ?Sized>(_input: &T) -> &'static str {
@@ -105,6 +105,7 @@ fn no_part_2<T: ?Sized>(_input: &T) -> &'static str {
 
 
 mod day1;
+mod day2;
 
 
 fn main() {
