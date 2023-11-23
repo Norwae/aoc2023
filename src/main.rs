@@ -1,46 +1,38 @@
 #![feature(never_type)]
 
 use std::error::Error;
-use std::fmt::Display;
 use std::fs;
+use std::fmt::Display;
 use std::time::{Duration, Instant};
 
 #[derive(Debug, Default)]
 pub struct Context {
     total_duration: Duration,
-    non_parse_duration: Duration
+    non_parse_duration: Duration,
 }
 
-trait OutputAndRest {
-    type Output : ?Sized;
-
-    fn output(&self) -> &Self::Output;
-    fn rest(&self) -> &str;
+trait OutputAndRest<'a, A> {
+    fn rest(&self) -> &'a str;
+    fn output(self) -> A;
 }
 
-impl OutputAndRest for String {
-    type Output = str;
-    fn output(&self) -> &Self::Output {
-        &self
+impl <'a, T> OutputAndRest<'a, T> for (&'a str, T) {
+    fn rest(&self) -> &'a str {
+        self.0
     }
 
-    fn rest(&self) -> &str {
-        ""
+    fn output(self) -> T {
+        self.1
     }
 }
 
-impl <T> OutputAndRest for (&str, T) {
-    type Output = T;
+struct SimpleError(String);
 
-    fn output(&self) -> &Self::Output {
-        &self.1
-    }
-
-    fn rest(&self) -> &str {
-        &self.0
+impl<E: Error> From<E> for SimpleError {
+    fn from(value: E) -> Self {
+        SimpleError(value.to_string())
     }
 }
-
 macro_rules! solution {
     () => {
         solution!(crate::unparsed);
@@ -61,38 +53,53 @@ macro_rules! solution {
     };
 }
 
+fn parse_report_errors<
+    'a,
+    Parsed,
+    RestInfo: OutputAndRest<'a, Parsed>,
+    Parser: FnOnce(&str) -> Result<RestInfo, SimpleError>
+>(input: &'a str, p: Parser) -> Option<Parsed> {
+    let result = p(input);
+    return match result {
+        Ok(rest_info) => {;
+            if !rest_info.rest().is_empty() {
+                eprintln!("Dangling input: '{}', ignoring", &rest_info.rest())
+            }
+            Some(rest_info.output())
+        }
+        Err(error) => {
+            eprintln!("Could not parse input: {}", error.0);
+            None
+        }
+    };
+}
+
 fn solve<
-    Intermediate: ?Sized,
-    Err : Error,
-    ParseResult: OutputAndRest<Output=Intermediate>,
-    Result1 : Display,
-    Result2 : Display,
-    Parse: FnOnce(String) -> Result<ParseResult, Err>,
+    Intermediate,
+    ParseResult: for<'a> OutputAndRest<'a, Intermediate>,
+    Result1: Display,
+    Result2: Display,
+    Parse: for<'a> FnOnce(&'a str) -> Result<ParseResult, SimpleError>,
     Part1: FnOnce(&Intermediate) -> Result1,
     Part2: FnOnce(&Intermediate) -> Result2>(
     context: &mut Context,
     filename: &str,
     parse: Parse,
     solve_part_1: Part1,
-    solve_part_2: Part2
-){
+    solve_part_2: Part2,
+) {
     let start = Instant::now();
     let path = format!("inputfiles/{}", filename);
     let contents = fs::read(&path);
 
     if let Ok(contents) = contents {
         let input = String::from_utf8(contents).expect("valid utf8");
-        let prepared = parse(input);
 
-        if let Ok(parsed) = prepared {
-            if !parsed.rest().is_empty() {
-                eprintln!("Input was not completely parsed, rest is '{}'", parsed.rest())
-            }
-
+        if let Some(parsed) = parse_report_errors(&input, parse) {
             let after_parse = Instant::now();
-            let solution_part1 = solve_part_1(parsed.output());
+            let solution_part1 = solve_part_1(&parsed);
             let after_p1 = Instant::now();
-            let solution_part2 = solve_part_2(parsed.output());
+            let solution_part2 = solve_part_2(&parsed);
             let after_p2 = Instant::now();
 
             println!("Solved {}, part1: {}, part2: {} ({:?} part 1, {:?} part 2)",
@@ -104,10 +111,7 @@ fn solve<
             );
             context.total_duration += after_p2 - start;
             context.non_parse_duration += after_p2 - after_parse;
-        } else  {
-            eprintln!("Could not parse input: {}", prepared.err().unwrap())
         }
-
     } else {
         eprintln!("Could not read input {}, due to {}", path, contents.err().unwrap())
     }
@@ -120,6 +124,7 @@ fn unparsed(str: String) -> Result<String, !> {
 fn unsolved<T: ?Sized>(_input: &T) -> &'static str {
     "unsolved"
 }
+
 fn no_part_2<T: ?Sized>(_input: &T) -> &'static str {
     "No part 2"
 }
