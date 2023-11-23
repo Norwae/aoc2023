@@ -1,5 +1,3 @@
-#![feature(never_type)]
-
 use std::error::Error;
 use std::fs;
 use std::fmt::Display;
@@ -117,7 +115,7 @@ fn solve<
     }
 }
 
-fn unparsed(str: String) -> Result<String, !> {
+fn unparsed(str: String) -> Result<String, String> {
     Ok(str)
 }
 
