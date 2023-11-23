@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::fs;
 use std::fmt::Display;
 use std::time::{Duration, Instant};
@@ -23,8 +22,8 @@ macro_rules! solution {
     ($parse:path, $part1:path, $part2:path) => {
         pub fn solve(ctx: &mut crate::Context) {
             let path = module_path!();
-            let cutoff = path.rfind("::").unwrap();
-            let filename = &path[cutoff + 2..];
+            let cutoff = path.rfind("::").map(|found|found + 2).unwrap_or(0);
+            let filename = &path[cutoff..];
             crate::solve(ctx, filename, $parse, $part1, $part2);
         }
     };
@@ -33,8 +32,8 @@ macro_rules! solution {
 fn parse_report_errors<
     Parsed,
     Parser: FnOnce(&str) -> IResult<&str, Parsed>
->(input: &str, p: Parser) -> Option<Parsed> {
-    let result = p(input);
+>(input: String, p: Parser) -> Option<Parsed> {
+    let result = p(&input);
     return match result {
         Ok((rest, parsed)) => {
             if !rest.is_empty() {
@@ -69,7 +68,7 @@ fn solve<
     if let Ok(contents) = contents {
         let input = String::from_utf8(contents).expect("valid utf8");
 
-        if let Some(parsed) = parse_report_errors(&input, parse) {
+        if let Some(parsed) = parse_report_errors(input, parse) {
             let after_parse = Instant::now();
             let solution_part1 = solve_part_1(&parsed);
             let after_p1 = Instant::now();
@@ -110,7 +109,7 @@ mod day2;
 
 fn main() {
     let day_pointers = vec![
-        day1::solve
+        day1::solve, day2::solve
     ];
 
     let mut context = Context::default();
