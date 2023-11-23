@@ -63,12 +63,10 @@ fn solve<
 ) {
     let start = Instant::now();
     let path = format!("inputfiles/{}", filename);
-    let contents = fs::read(&path);
+    let contents = fs::read_to_string(&path);
 
     if let Ok(contents) = contents {
-        let input = String::from_utf8(contents).expect("valid utf8");
-
-        if let Some(parsed) = parse_report_errors(input, parse) {
+        if let Some(parsed) = parse_report_errors(contents, parse) {
             let after_parse = Instant::now();
             let solution_part1 = solve_part_1(&parsed);
             let after_p1 = Instant::now();
@@ -130,7 +128,7 @@ mod day24;
 
 
 fn main() {
-    let day_pointers = vec![
+    let day_pointers = [
         day1::solve, day2::solve, day3::solve, day4::solve, day5::solve, day6::solve,
         day7::solve, day8::solve, day9::solve, day10::solve, day11::solve, day12::solve,
         day13::solve, day14::solve, day15::solve, day16::solve, day17::solve, day18::solve,
