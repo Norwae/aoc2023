@@ -1,4 +1,5 @@
 use nom::bytes::complete::tag;
+use nom::character::complete::line_ending;
 use nom::combinator::map;
 use nom::IResult;
 use nom::multi::{many1, separated_list1};
@@ -13,7 +14,7 @@ fn food_list(input: &str) -> IResult<&str, u64> {
 }
 
 fn parse(input: &str) -> IResult<&str, Vec<u64>> {
-    Ok(separated_list1(tag("\n"), food_list)(&input)?)
+    Ok(separated_list1(line_ending, food_list)(&input)?)
 }
 
 fn part1(input: &Vec<u64>) -> u64 {
