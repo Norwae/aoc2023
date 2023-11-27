@@ -104,6 +104,7 @@ fn no_part_2<T: ?Sized>(_input: &T) -> &'static str {
     "No part 2"
 }
 
+mod util;
 
 mod day1;
 mod day2;
