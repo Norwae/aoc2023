@@ -3,11 +3,11 @@ use nom::combinator::map;
 use nom::IResult;
 use nom::multi::{many1, separated_list1};
 
-use crate::util::parse_u64;
+use crate::util::parse_u64_terminated;
 
 fn food_list(input: &str) -> IResult<&str, u64> {
     map(
-        many1(parse_u64),
+        many1(parse_u64_terminated),
         |list| list.into_iter().sum(),
     )(input)
 }
