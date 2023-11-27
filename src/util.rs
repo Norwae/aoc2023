@@ -1,6 +1,5 @@
 use nom::branch::alt;
-use nom::bytes::complete::tag;
-use nom::character::complete::{digit1, line_ending, multispace1, space1};
+use nom::character::complete::{digit1, line_ending, space1};
 use nom::combinator::map_res;
 use nom::IResult;
 use nom::sequence::terminated;
