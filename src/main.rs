@@ -7,6 +7,7 @@ use nom::IResult;
 pub struct Context {
     total_duration: Duration,
     non_parse_duration: Duration,
+    longest: Option<Duration>
 }
 
 macro_rules! solution {
@@ -80,7 +81,10 @@ fn solve<
                      after_p1 - after_parse,
                      after_p2 - after_p1
             );
-            context.total_duration += after_p2 - start;
+            let this_task = after_p2 - start;
+
+            context.longest = Some(context.longest.unwrap_or(this_task).max(this_task));
+            context.total_duration += this_task;
             context.non_parse_duration += after_p2 - after_parse;
         }
     } else {
@@ -139,5 +143,5 @@ fn main() {
     for ptr in day_pointers {
         ptr(&mut context)
     }
-    println!("AoC so far, including io: {:?} total, {:?} without overhead", context.total_duration, context.non_parse_duration)
+    println!("AoC so far, including io: {:?} total, {:?} without overhead. Longst day runtime was {:?} ", context.total_duration, context.non_parse_duration, context.longest.unwrap())
 }
