@@ -1,24 +1,28 @@
-use nom::bytes::complete::tag;
 use nom::character::complete::line_ending;
-use nom::combinator::map;
 use nom::IResult;
-use nom::multi::{many1, separated_list1};
+use nom::multi::{fold_many1, separated_list1};
 
 use crate::util::parse_u64_terminated;
 
 fn food_list(input: &str) -> IResult<&str, u64> {
-    map(
-        many1(parse_u64_terminated),
-        |list| list.into_iter().sum(),
+    fold_many1(
+        parse_u64_terminated,
+        ||0u64,
+        |x, y| x + y
     )(input)
 }
 
 fn parse(input: &str) -> IResult<&str, Vec<u64>> {
-    Ok(separated_list1(line_ending, food_list)(&input)?)
+    separated_list1(line_ending, food_list)(input)
 }
 
 fn part1(input: &Vec<u64>) -> u64 {
-    input.iter().cloned().max().unwrap_or(0)
+    let mut m = 0;
+    for n in input {
+        m = m.max(*n)
+    }
+
+    m
 }
 
 fn part2(input: &Vec<u64>) -> u64 {
@@ -33,7 +37,7 @@ fn part2(input: &Vec<u64>) -> u64 {
             idx += 1;
         }
     }
-    buffer[1..].iter().cloned().sum()
+    buffer[1] + buffer[2] + buffer[3]
 }
 
 solution!(parse, part1, part2);

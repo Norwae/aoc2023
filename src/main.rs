@@ -74,10 +74,11 @@ fn solve<
             let solution_part2 = solve_part_2(&parsed);
             let after_p2 = Instant::now();
 
-            println!("Solved {}, part1: {}, part2: {} ({:?} part 1, {:?} part 2)",
+            println!("Solved {}, part1: {}, part2: {} ({:?} parse, {:?} part 1, {:?} part 2)",
                      filename,
                      solution_part1,
                      solution_part2,
+                     after_parse - start,
                      after_p1 - after_parse,
                      after_p2 - after_p1
             );
