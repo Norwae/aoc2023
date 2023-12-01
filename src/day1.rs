@@ -52,12 +52,12 @@ fn part2(input: &Vec<Vec<i64>>) -> u64 {
 }
 
 fn parse(mut input: &str) -> IResult<&str, Vec<Vec<i64>>> {
-    let mut result = vec![Vec::new()];
+    let mut result = vec![Vec::with_capacity(8)];
 
     while !input.is_empty() {
         let first = input.as_bytes()[0];
         if first == b'\n' {
-            result.push(Vec::new())
+            result.push(Vec::with_capacity(8))
         } else if (b'1'..=b'9').contains(&first) {
             result.last_mut().unwrap().push((first - b'0') as i64);
         } else {
