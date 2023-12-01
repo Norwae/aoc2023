@@ -1,38 +1,32 @@
 use nom::IResult;
 
-#[derive(Debug, Copy, Clone)]
-enum Contents {
-    Plain(u64),
-    Spelled(u64),
-}
 
-const STRING_VALUE_PAIRS: [(&'static str, Contents); 19] = [
-    ("0", Contents::Plain(0)),
-    ("1", Contents::Plain(1)),
-    ("2", Contents::Plain(2)),
-    ("3", Contents::Plain(3)),
-    ("4", Contents::Plain(4)),
-    ("5", Contents::Plain(5)),
-    ("6", Contents::Plain(6)),
-    ("7", Contents::Plain(7)),
-    ("8", Contents::Plain(8)),
-    ("9", Contents::Plain(9)),
-    ("one", Contents::Spelled(1)),
-    ("two", Contents::Spelled(2)),
-    ("three", Contents::Spelled(3)),
-    ("four", Contents::Spelled(4)),
-    ("five", Contents::Spelled(5)),
-    ("six", Contents::Spelled(6)),
-    ("seven", Contents::Spelled(7)),
-    ("eight", Contents::Spelled(8)),
-    ("nine", Contents::Spelled(9))
+const STRING_VALUE_PAIRS: [(&'static str, i64); 18] = [
+    ("1", 1),
+    ("2", 2),
+    ("3", 3),
+    ("4", 4),
+    ("5", 5),
+    ("6", 6),
+    ("7", 7),
+    ("8", 8),
+    ("9", 9),
+    ("one", -1),
+    ("two", -2),
+    ("three", -3),
+    ("four", -4),
+    ("five", -5),
+    ("six", -6),
+    ("seven", -7),
+    ("eight", -8),
+    ("nine", -9)
 ];
 
 
-fn solve_generic<F: Fn(&Contents) -> Option<u64>>(input: &Vec<Vec<Contents>>, map: F) -> u64 {
+fn solve_generic<F: Fn(&i64) -> Option<u64>>(input: &Vec<Vec<i64>>, map: F) -> u64 {
     let mut sum = 0;
     for content in input.into_iter() {
-        let parts = content.iter().filter_map(&map);
+        let parts = content.into_iter().filter_map(&map);
         let mut first = u64::MAX;
         let mut last = 0;
 
@@ -49,25 +43,24 @@ fn solve_generic<F: Fn(&Contents) -> Option<u64>>(input: &Vec<Vec<Contents>>, ma
     sum
 }
 
-fn part1(input: &Vec<Vec<Contents>>) -> u64 {
+fn part1(input: &Vec<Vec<i64>>) -> u64 {
     solve_generic(input, |c| {
-        match c {
-            Contents::Plain(v) => Some(*v),
-            Contents::Spelled(_) => None
+        let c = *c;
+        if c >= 0 {
+            Some(c as u64)
+        } else {
+            None
         }
     })
 }
 
-fn part2(input: &Vec<Vec<Contents>>) -> u64 {
+fn part2(input: &Vec<Vec<i64>>) -> u64 {
     solve_generic(input, |c| {
-        match c {
-            Contents::Plain(v) => Some(*v),
-            Contents::Spelled(v) => Some(*v)
-        }
+        Some(c.abs() as u64)
     })
 }
 
-fn parse(mut input: &str) -> IResult<&str, Vec<Vec<Contents>>> {
+fn parse(mut input: &str) -> IResult<&str, Vec<Vec<i64>>> {
     let mut result = vec![Vec::new()];
 
     while !input.is_empty() {
