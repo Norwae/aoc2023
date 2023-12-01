@@ -6,7 +6,7 @@ enum Contents {
     Spelled(u64),
 }
 
-static STRING_VALUE_PAIRS: [(&'static str, Contents); 19] = [
+const STRING_VALUE_PAIRS: [(&'static str, Contents); 19] = [
     ("0", Contents::Plain(0)),
     ("1", Contents::Plain(1)),
     ("2", Contents::Plain(2)),
