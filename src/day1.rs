@@ -1,43 +1,86 @@
-use nom::character::complete::line_ending;
 use nom::IResult;
-use nom::multi::{fold_many1, separated_list1};
 
-use crate::util::parse_u64_terminated;
-
-fn food_list(input: &str) -> IResult<&str, u64> {
-    fold_many1(
-        parse_u64_terminated,
-        ||0u64,
-        |x, y| x + y
-    )(input)
+#[derive(Debug, Copy, Clone)]
+enum Contents {
+    Plain(u64),
+    Spelled(u64),
 }
 
-fn parse(input: &str) -> IResult<&str, Vec<u64>> {
-    separated_list1(line_ending, food_list)(input)
-}
+static STRING_VALUE_PAIRS: [(&'static str, Contents); 19] = [
+    ("0", Contents::Plain(0)),
+    ("1", Contents::Plain(1)),
+    ("2", Contents::Plain(2)),
+    ("3", Contents::Plain(3)),
+    ("4", Contents::Plain(4)),
+    ("5", Contents::Plain(5)),
+    ("6", Contents::Plain(6)),
+    ("7", Contents::Plain(7)),
+    ("8", Contents::Plain(8)),
+    ("9", Contents::Plain(9)),
+    ("one", Contents::Spelled(1)),
+    ("two", Contents::Spelled(2)),
+    ("three", Contents::Spelled(3)),
+    ("four", Contents::Spelled(4)),
+    ("five", Contents::Spelled(5)),
+    ("six", Contents::Spelled(6)),
+    ("seven", Contents::Spelled(7)),
+    ("eight", Contents::Spelled(8)),
+    ("nine", Contents::Spelled(9))
+];
 
-fn part1(input: &Vec<u64>) -> u64 {
-    let mut m = 0;
-    for n in input {
-        m = m.max(*n)
-    }
+fn parse_single_line(mut input: &str) -> Vec<Contents> {
+    let  mut nrs = Vec::with_capacity(16);
 
-    m
-}
-
-fn part2(input: &Vec<u64>) -> u64 {
-    let mut buffer = [0; 4];
-
-    for next in input {
-        let next = *next;
-        buffer[0] = next;
-        let mut idx = 0;
-        while idx < 3 && buffer[idx] > buffer[idx + 1] {
-            buffer.swap(idx, idx + 1);
-            idx += 1;
+    while !input.is_empty() {
+        for (prefix, value) in &STRING_VALUE_PAIRS {
+            if input.starts_with(prefix) {
+                nrs.push(*value)
+            }
         }
+        input = &input[1..]
     }
-    buffer[1] + buffer[2] + buffer[3]
+
+    nrs
 }
+
+fn solve_generic<F: Fn(&Contents) -> Option<u64>>(input: &Vec<Vec<Contents>>, map: F) -> u64 {
+    input.iter().map(move |content| {
+        let parts = content.iter().filter_map(&map);
+        let mut first = u64::MAX;
+        let mut last = 0;
+
+        for p in parts {
+            if first == u64::MAX {
+                first = p
+            }
+            last = p
+        }
+
+        first * 10 + last
+    }).sum()
+}
+
+fn part1(input: &Vec<Vec<Contents>>) -> u64 {
+    solve_generic(input, |c| {
+        match c {
+            Contents::Plain(v) => Some(*v),
+            Contents::Spelled(_) => None
+        }
+    })
+}
+
+fn part2(input: &Vec<Vec<Contents>>) -> u64 {
+    solve_generic(input, |c| {
+        match c {
+            Contents::Plain(v) => Some(*v),
+            Contents::Spelled(v) => Some(*v)
+        }
+    })
+}
+
+fn parse(input: &str) -> IResult<&str, Vec<Vec<Contents>>> {
+    Ok(("", input.lines().map(parse_single_line).collect()))
+}
+
 
 solution!(parse, part1, part2);
