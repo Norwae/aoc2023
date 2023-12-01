@@ -30,7 +30,8 @@ const STRING_VALUE_PAIRS: [(&'static str, Contents); 19] = [
 
 
 fn solve_generic<F: Fn(&Contents) -> Option<u64>>(input: &Vec<Vec<Contents>>, map: F) -> u64 {
-    input.iter().map(move |content| {
+    let mut sum = 0;
+    for content in input.into_iter() {
         let parts = content.iter().filter_map(&map);
         let mut first = u64::MAX;
         let mut last = 0;
@@ -42,8 +43,10 @@ fn solve_generic<F: Fn(&Contents) -> Option<u64>>(input: &Vec<Vec<Contents>>, ma
             last = p
         }
 
-        first * 10 + last
-    }).sum()
+        sum += first * 10 + last
+    }
+
+    sum
 }
 
 fn part1(input: &Vec<Vec<Contents>>) -> u64 {
