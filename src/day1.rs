@@ -70,7 +70,6 @@ fn part2(input: &Vec<Vec<Contents>>) -> u64 {
 fn parse(mut input: &str) -> IResult<&str, Vec<Vec<Contents>>> {
     let mut result = vec![Vec::new()];
 
-
     while !input.is_empty() {
         if input.as_bytes()[0] == b'\n' {
             result.push(Vec::new())
@@ -84,9 +83,7 @@ fn parse(mut input: &str) -> IResult<&str, Vec<Vec<Contents>>> {
         input = &input[1..]
     }
 
-
     Ok(("", result))
 }
-
 
 solution!(parse, part1, part2);
