@@ -1,16 +1,7 @@
 use nom::IResult;
 
 
-const STRING_VALUE_PAIRS: [(&'static str, i64); 18] = [
-    ("1", 1),
-    ("2", 2),
-    ("3", 3),
-    ("4", 4),
-    ("5", 5),
-    ("6", 6),
-    ("7", 7),
-    ("8", 8),
-    ("9", 9),
+const STRING_VALUE_PAIRS: [(&'static str, i64); 9] = [
     ("one", -1),
     ("two", -2),
     ("three", -3),
@@ -64,8 +55,11 @@ fn parse(mut input: &str) -> IResult<&str, Vec<Vec<i64>>> {
     let mut result = vec![Vec::new()];
 
     while !input.is_empty() {
-        if input.as_bytes()[0] == b'\n' {
+        let first = input.as_bytes()[0];
+        if first == b'\n' {
             result.push(Vec::new())
+        } else if (b'1'..=b'9').contains(&first) {
+            result.last_mut().unwrap().push((first - b'0') as i64);
         } else {
             for (prefix, value) in &STRING_VALUE_PAIRS {
                 if input.starts_with(prefix) {
