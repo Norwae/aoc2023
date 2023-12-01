@@ -1,6 +1,5 @@
 use nom::IResult;
 
-
 const STRING_VALUE_PAIRS: [(&'static str, i64); 9] = [
     ("one", -1),
     ("two", -2),
