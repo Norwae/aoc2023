@@ -12,7 +12,7 @@ pub struct Context {
 
 macro_rules! solution {
     () => {
-        solution!(crate::unparsed);
+        pub fn solve(_: &mut crate::Context) {}
     };
     ($parse:path) => {
         solution!($parse, crate::unsolved);
