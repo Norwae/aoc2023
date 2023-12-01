@@ -49,7 +49,7 @@ fn part1(input: &Vec<i64>) -> u64 {
 
 fn part2(input: &Vec<i64>) -> u64 {
     solve_generic(input, |c| {
-        Some(c.abs() as u64)
+        Some(c.unsigned_abs())
     })
 }
 
