@@ -28,20 +28,6 @@ static STRING_VALUE_PAIRS: [(&'static str, Contents); 19] = [
     ("nine", Contents::Spelled(9))
 ];
 
-fn parse_single_line(mut input: &str) -> Vec<Contents> {
-    let  mut nrs = Vec::with_capacity(16);
-
-    while !input.is_empty() {
-        for (prefix, value) in &STRING_VALUE_PAIRS {
-            if input.starts_with(prefix) {
-                nrs.push(*value)
-            }
-        }
-        input = &input[1..]
-    }
-
-    nrs
-}
 
 fn solve_generic<F: Fn(&Contents) -> Option<u64>>(input: &Vec<Vec<Contents>>, map: F) -> u64 {
     input.iter().map(move |content| {
@@ -78,8 +64,25 @@ fn part2(input: &Vec<Vec<Contents>>) -> u64 {
     })
 }
 
-fn parse(input: &str) -> IResult<&str, Vec<Vec<Contents>>> {
-    Ok(("", input.lines().map(parse_single_line).collect()))
+fn parse(mut input: &str) -> IResult<&str, Vec<Vec<Contents>>> {
+    let mut result = vec![Vec::new()];
+
+
+    while !input.is_empty() {
+        if input.as_bytes()[0] == b'\n' {
+            result.push(Vec::new())
+        } else {
+            for (prefix, value) in &STRING_VALUE_PAIRS {
+                if input.starts_with(prefix) {
+                    result.last_mut().unwrap().push(*value)
+                }
+            }
+        }
+        input = &input[1..]
+    }
+
+
+    Ok(("", result))
 }
 
 
