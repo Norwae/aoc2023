@@ -23,7 +23,7 @@ fn solve_generic<F: Fn(i64) -> Option<u64>>(input: &Vec<i64>, map: F) -> u64 {
         let content = *content;
 
         if content == 0 {
-            let two_digit_nr = dbg!(10 * first + last);
+            let two_digit_nr = 10 * first + last;
             sum += two_digit_nr;
             first = u64::MAX
         } else if let Some(next) = map(content) {
