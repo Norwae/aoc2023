@@ -15,10 +15,12 @@ macro_rules! solution {
         pub fn solve(_: &mut crate::Context) {}
     };
     ($parse:path) => {
-        solution!($parse, crate::unsolved);
+        fn not_solved<T>(_: &T)->&'static str { "not solved "}
+        solution!($parse, not_solved);
     };
     ($parse:path, $solution:path) => {
-        solution!($parse, $solution, crate::no_part_2);
+        fn part_2_absent<T>(_: &T)->&'static str { "part 2 not begun"}
+        solution!($parse, $solution, part_2_absent);
     };
     ($parse:path, $part1:path, $part2:path) => {
         pub fn solve(ctx: &mut crate::Context) {
@@ -91,18 +93,6 @@ fn solve<
     } else {
         eprintln!("Could not read input {}, due to {}", path, contents.err().unwrap())
     }
-}
-
-fn unparsed(str: &str) -> IResult<&str, String> {
-    Ok(("", str.to_string()))
-}
-
-fn unsolved<T: ?Sized>(_input: &T) -> &'static str {
-    "unsolved"
-}
-
-fn no_part_2<T: ?Sized>(_input: &T) -> &'static str {
-    "No part 2"
 }
 
 mod util;
