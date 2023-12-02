@@ -15,7 +15,7 @@ macro_rules! solution {
         pub fn solve(_: &mut crate::Context) {}
     };
     ($parse:path) => {
-        fn not_solved<T>(_: &T)->&'static str { "not solved "}
+        fn not_solved<T: std::fmt::Debug>(input: &T)-> String{ format!("Parse result: {:?}", input)}
         solution!($parse, not_solved);
     };
     ($parse:path, $solution:path) => {
