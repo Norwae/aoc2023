@@ -21,13 +21,6 @@ struct BagState {
 }
 
 impl BagState {
-    fn merge_with(mut self, other: Self) -> Self {
-        self.red = self.red.max(other.red);
-        self.green = self.green.max(other.green);
-        self.blue = self.blue.max(other.blue);
-        self
-    }
-
     fn plausible_with(&self, other: &Self) -> bool {
         self.red <= other.red &&
             self.green <= other.green &&
@@ -49,27 +42,30 @@ fn color(input: &str) -> IResult<&str, Color> {
     )(input)
 }
 
-fn single_round(input: &str) -> IResult<&str, BagState> {
+fn single_round<'a>(state: &'a mut BagState) -> impl FnMut(&str) -> IResult<&str, ()> + 'a { |input|
     map(tuple((u64, space1, color)), |(n,_, c)|{
-        let mut state = BagState::default();
         let ptr = match c {
             Color::Red => &mut state.red,
             Color::Green => &mut state.green,
             Color::Blue => &mut state.blue
         };
+        let val = *ptr;
+        let val = val.max(n);
 
-        *ptr = n;
-        state
+        *ptr = val
     })(input)
 }
 
 fn line(input: &str) -> IResult<&str, BagState> {
-    map(
-        tuple((tag("Game "), u64, tag(": "), separated_list1(alt((tag(", "), tag("; "))), single_round))),
-        |(_, n, _, list)| {
-            list.into_iter().fold(BagState::default(), BagState::merge_with)
-        }
-    )(input)
+    let mut merge_bag = BagState::default();
+
+    let (rest, _) = tuple((
+        tag("Game "),
+        u64,
+        tag(": "),
+        separated_list1(alt((tag(", "), tag("; "))), single_round(&mut merge_bag))
+    ))(input)?;
+    Ok((rest, merge_bag))
 }
 
 fn parse(input: &str) -> IResult<&str, Vec<BagState>> {
