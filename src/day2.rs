@@ -1,5 +1,5 @@
 use nom::branch::alt;
-use nom::bytes::complete::tag;
+use nom::bytes::complete::{tag, take, take_until};
 use nom::character::complete::{line_ending, space1, u64};
 use nom::combinator::map;
 use nom::IResult;
@@ -59,10 +59,10 @@ fn single_round<'a>(state: &'a mut BagState) -> impl FnMut(&str) -> IResult<&str
 fn line(input: &str) -> IResult<&str, BagState> {
     let mut merge_bag = BagState::default();
 
+
     let (rest, _) = tuple((
-        tag("Game "),
-        u64,
-        tag(": "),
+        take_until(": "),
+        take(2usize),
         separated_list1(alt((tag(", "), tag("; "))), single_round(&mut merge_bag))
     ))(input)?;
     Ok((rest, merge_bag))
