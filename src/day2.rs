@@ -42,18 +42,19 @@ fn color(input: &str) -> IResult<&str, Color> {
     )(input)
 }
 
-fn single_round<'a>(state: &'a mut BagState) -> impl FnMut(&str) -> IResult<&str, ()> + 'a { |input|
-    map(tuple((u64, space1, color)), |(n,_, c)|{
-        let ptr = match c {
-            Color::Red => &mut state.red,
-            Color::Green => &mut state.green,
-            Color::Blue => &mut state.blue
-        };
-        let val = *ptr;
-        let val = val.max(n);
+fn single_round<'a>(state: &'a mut BagState) -> impl FnMut(&str) -> IResult<&str, ()> + 'a {
+    |input|
+        map(tuple((u64, space1, color)), |(n, _, c)| {
+            let ptr = match c {
+                Color::Red => &mut state.red,
+                Color::Green => &mut state.green,
+                Color::Blue => &mut state.blue
+            };
+            let val = *ptr;
+            let val = val.max(n);
 
-        *ptr = val
-    })(input)
+            *ptr = val
+        })(input)
 }
 
 fn line(input: &str) -> IResult<&str, BagState> {
@@ -74,11 +75,13 @@ fn parse(input: &str) -> IResult<&str, Vec<BagState>> {
 
 fn part1(input: &Vec<BagState>) -> i32 {
     let limits = BagState {
-        red: 12, green: 13, blue: 14
+        red: 12,
+        green: 13,
+        blue: 14,
     };
 
     input.iter().enumerate().fold(0, |sum, (idx, state)| {
-        sum + if (state.plausible_with(&limits)) {
+        sum + if state.plausible_with(&limits) {
             1 + idx as i32
         } else {
             0
@@ -87,7 +90,7 @@ fn part1(input: &Vec<BagState>) -> i32 {
 }
 
 fn part2(input: &Vec<BagState>) -> u64 {
-    input.iter().fold(0, |sum, state|{
+    input.iter().fold(0, |sum, state| {
         sum + state.power()
     })
 }
