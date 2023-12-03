@@ -25,6 +25,7 @@ impl GridNumber {
 #[derive(Default, Debug)]
 struct Input {
     numbers: Vec<GridNumber>,
+    gear_locations: Vec<Coord2D>,
     part_locations: Vec<Coord2D>,
 }
 
@@ -48,6 +49,9 @@ fn parse_line_into<'a, 'b>(target: &'b mut Input, y: usize, mut line: &'a str) -
                 continue;
             }
             b'.' => {}
+            b'*' => {
+                target.gear_locations.push(Coord2D(x, y))
+            }
             _ => {
                 target.part_locations.push(Coord2D(x, y))
             }
@@ -63,10 +67,25 @@ fn parse_line_into<'a, 'b>(target: &'b mut Input, y: usize, mut line: &'a str) -
 fn part1(input: &Input) -> u64 {
     let mut sum = 0;
     for nr in &input.numbers {
-        if input.part_locations.iter().any(|part| {
+        if input.part_locations.iter().chain(input.gear_locations.iter()).any(|part| {
             nr.next_to(part)
         }) {
             sum += nr.value
+        }
+    }
+
+    sum
+}
+
+fn part2(input: &Input) -> u64 {
+    let mut sum = 0;
+    for gear in &input.gear_locations {
+        let numbers = input.numbers.iter().filter(|nr|{
+            nr.next_to(gear)
+        }).collect::<Vec<_>>();
+
+        if numbers.len() == 2 {
+            sum += numbers[0].value * numbers[1].value
         }
     }
 
@@ -82,4 +101,4 @@ fn parse(input: &str) -> IResult<&str, Input> {
     Ok(("", target))
 }
 
-solution!(parse, part1);
+solution!(parse, part1, part2);
