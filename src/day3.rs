@@ -1,5 +1,4 @@
 use std::collections::{BTreeMap, HashSet};
-use std::ops::RangeInclusive;
 use nom::character::complete::u64;
 use nom::IResult;
 
@@ -11,7 +10,7 @@ impl Coord2D {
         let Coord2D(x, y) = self;
         match len {
             1 => {
-                let mut b = &mut buffer[0..8];
+                let b = &mut buffer[0..8];
                 b.copy_from_slice(&[
                     Coord2D(x - 1, y - 1), Coord2D(x, y - 1), Coord2D(x + 1, y - 1),
                     Coord2D(x - 1, y), Coord2D(x + 1, y),
@@ -20,7 +19,7 @@ impl Coord2D {
                 b
             }
             2 => {
-                let mut b = &mut buffer[0..10];
+                let b = &mut buffer[0..10];
                 b.copy_from_slice(&[
                     Coord2D(x - 1, y - 1), Coord2D(x, y - 1), Coord2D(x + 1, y - 1), Coord2D(x + 2, y - 1),
                     Coord2D(x - 1, y), Coord2D(x + 2, y),
@@ -29,7 +28,7 @@ impl Coord2D {
                 b
             }
             _ => {
-                let mut b = &mut buffer[..];
+                let b = &mut buffer[0..12];
                 b.copy_from_slice(&[
                     Coord2D(x - 1, y - 1), Coord2D(x, y - 1), Coord2D(x + 1, y - 1), Coord2D(x + 2, y - 1), Coord2D(x + 3, y - 1),
                     Coord2D(x - 1, y), Coord2D(x + 3, y),
