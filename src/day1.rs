@@ -57,17 +57,23 @@ fn parse(mut input: &str) -> IResult<&str, Vec<i64>> {
 
     while !input.is_empty() {
         let first = input.as_bytes()[0];
-        if first == b'\n' {
-            result.push(0)
-        } else if (b'1'..=b'9').contains(&first) {
-            result.push((first - b'0') as i64);
-        } else {
-            for (prefix, value) in &STRING_VALUE_PAIRS {
-                if input.starts_with(prefix) {
-                    result.push(*value)
+        match first {
+            b'\n' => {
+                result.push(0)
+            }
+            b'1' | b'2' | b'3' | b'4'| b'5' | b'6'| b'7'| b'8'| b'9' => {
+                result.push((first - b'0') as i64);
+            }
+            b'o' | b't' | b'f' | b's' | b'e' | b'n' => {
+                for (prefix, value) in &STRING_VALUE_PAIRS {
+                    if input.starts_with(prefix) {
+                        result.push(*value)
+                    }
                 }
             }
+            _ => {}
         }
+
         input = &input[1..]
     }
 
