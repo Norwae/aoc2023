@@ -39,7 +39,7 @@ fn parse_report_errors<
     let result = p(&input);
     return match result {
         Ok((rest, parsed)) => {
-            if !rest.is_empty() {
+            if !rest.trim().is_empty() {
                 eprintln!("Dangling input: '{}', ignoring", rest)
             }
             Some(parsed)
