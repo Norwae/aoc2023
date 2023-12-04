@@ -1,44 +1,10 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
+
 use nom::character::complete::u64;
 use nom::IResult;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 struct Coord2D(i64, i64);
-
-impl Coord2D {
-    fn masks(self, buffer: &mut [Self], len: usize) -> &[Self] {
-        let Coord2D(x, y) = self;
-        match len {
-            1 => {
-                let b = &mut buffer[0..8];
-                b.copy_from_slice(&[
-                    Coord2D(x - 1, y - 1), Coord2D(x, y - 1), Coord2D(x + 1, y - 1),
-                    Coord2D(x - 1, y), Coord2D(x + 1, y),
-                    Coord2D(x - 1, y + 1), Coord2D(x, y + 1), Coord2D(x + 1, y + 1)
-                ]);
-                b
-            }
-            2 => {
-                let b = &mut buffer[0..10];
-                b.copy_from_slice(&[
-                    Coord2D(x - 1, y - 1), Coord2D(x, y - 1), Coord2D(x + 1, y - 1), Coord2D(x + 2, y - 1),
-                    Coord2D(x - 1, y), Coord2D(x + 2, y),
-                    Coord2D(x - 1, y + 1), Coord2D(x, y + 1), Coord2D(x + 1, y + 1), Coord2D(x + 2, y + 1)
-                ]);
-                b
-            }
-            _ => {
-                let b = &mut buffer[0..12];
-                b.copy_from_slice(&[
-                    Coord2D(x - 1, y - 1), Coord2D(x, y - 1), Coord2D(x + 1, y - 1), Coord2D(x + 2, y - 1), Coord2D(x + 3, y - 1),
-                    Coord2D(x - 1, y), Coord2D(x + 3, y),
-                    Coord2D(x - 1, y + 1), Coord2D(x, y + 1), Coord2D(x + 1, y + 1), Coord2D(x + 2, y + 1), Coord2D(x + 3, y + 1)
-                ]);
-                b
-            }
-        }
-    }
-}
 
 #[derive(Debug)]
 struct GridNumber(u64);
@@ -105,18 +71,11 @@ fn parse_line_into<'a, 'b>(target: &'b mut Input, y: usize, mut line: &'a str) -
 
 fn part1(input: &Input) -> u64 {
     let mut sum = 0;
-    let mut unified_parts = HashSet::with_capacity(input.gear_locations.len() + input.part_locations.len());
-    input.gear_locations.iter().for_each(|x| {
-        unified_parts.insert(*x);
-    });
-    input.part_locations.iter().for_each(|x| {
-        unified_parts.insert(*x);
-    });
+    for part in input.part_locations.iter().chain(input.gear_locations.iter()) {
+        let potential_nrs = adjecent_to(&input.numbers, *part);
 
-    let mut buffer = [Coord2D(0, 0); 12];
-    for (base, nr) in &input.numbers {
-        for coord in base.masks(&mut buffer, nr.len()) {
-            if unified_parts.contains(coord) {
+        for (nr_location, nr) in potential_nrs {
+            if nr.next_to(nr_location, part) {
                 sum += nr.0
             }
         }
@@ -125,14 +84,18 @@ fn part1(input: &Input) -> u64 {
     sum
 }
 
+fn adjecent_to(map: &BTreeMap<Coord2D, GridNumber>, base: Coord2D) -> impl Iterator<Item=(&Coord2D, &GridNumber)> {
+    let Coord2D(x, y) = base;
+    map.range(Coord2D(x - 3, y - 1)..=Coord2D(x + 1, y + 1))
+}
+
 fn part2(input: &Input) -> u64 {
     let mut sum = 0;
     for gear in &input.gear_locations {
-        let Coord2D(x, y) = *gear;
-        let potential_nrs = input.numbers.range(Coord2D(x - 3, y - 1)..=Coord2D(x + 1, y + 1));
+        let potential_nrs = adjecent_to(&input.numbers, *gear);
 
         let numbers = potential_nrs.filter_map(|(nr_location, nr)| {
-            if nr.next_to(nr_location, gear) {
+            if nr.next_to(&nr_location, gear) {
                 Some(nr.0)
             } else {
                 None

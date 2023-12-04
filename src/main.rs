@@ -19,7 +19,7 @@ macro_rules! solution {
         solution!($parse, not_solved);
     };
     ($parse:path, $solution:path) => {
-        fn part_2_absent<T>(_: &T)->&'static str { "part 2 not begun"}
+        fn part_2_absent<T>(_: &T)->&'static str { "???"}
         solution!($parse, $solution, part_2_absent);
     };
     ($parse:path, $part1:path, $part2:path) => {
