@@ -7,7 +7,7 @@ use nom::sequence::{preceded, tuple};
 
 #[derive(Debug, Default)]
 struct Card {
-    match_count: u64
+    match_count: u64,
 }
 
 impl Card {
@@ -33,14 +33,14 @@ fn one_card(input: &str) -> IResult<&str, Card> {
         many1(u64_with_sep),
         tag(" |")
     )), |(_, _, my_numbers, _)| {
-        fold_many1(u64_with_sep, ||0u64, move |sum: u64,next: u64|{
+        fold_many1(u64_with_sep, || 0u64, move |sum: u64, next: u64| {
             if my_numbers.contains(&next) {
                 sum + 1
             } else {
                 sum
             }
         })
-    }), |match_count|Card {match_count})(input)
+    }), |match_count| Card { match_count })(input)
 }
 
 fn parse(input: &str) -> IResult<&str, Vec<Card>> {
@@ -48,11 +48,11 @@ fn parse(input: &str) -> IResult<&str, Vec<Card>> {
 }
 
 fn part1(input: &Vec<Card>) -> u64 {
-    input.iter().map(|c|c.value()).sum()
+    input.iter().map(|c| c.value()).sum()
 }
 
 fn part2(input: &Vec<Card>) -> u64 {
-    let mut input = input.iter().map(|card|(card, 1)).collect::<Vec<_>>();
+    let mut input = input.iter().map(|card| (card, 1)).collect::<Vec<_>>();
 
     for i in 0..input.len() {
         let (additional_cards, copies) = input[i];
