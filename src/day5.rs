@@ -15,7 +15,7 @@ struct RangeMapping {
 impl RangeMapping {
     fn apply(&self, input: i64) -> Option<i64> {
         let offset = input - self.source;
-        if (0..=self.length).contains(&offset) {
+        if (0..self.length).contains(&offset) {
             Some(self.target + offset)
         } else {
             None
