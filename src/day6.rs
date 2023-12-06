@@ -59,7 +59,6 @@ fn parse_part_2(input: &str) -> IResult<&str, Race> {
 fn solve_race(race: &Race) -> u64 {
     let mut lower = 1;
     let mut upper = race.time / 2;
-    // 0 and whole time never win, no need to look
 
     while lower + 1 < upper {
         let mid = (lower + upper) / 2;
