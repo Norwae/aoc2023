@@ -1,5 +1,5 @@
 use nom::bytes::complete::tag;
-use nom::character::complete::{digit1, line_ending, space1, u64};
+use nom::character::complete::{digit1, line_ending, space1, u64 as parse_u64};
 use nom::combinator::{map, map_res, peek};
 use nom::IResult;
 use nom::multi::{fold_many1, many1};
@@ -31,10 +31,10 @@ fn parse_part_1(input: &str) -> IResult<&str, Vec<Race>> {
     map(
         tuple((
             tag("Time:"),
-            many1(preceded(space1, u64)),
+            many1(preceded(space1, parse_u64)),
             line_ending,
             tag("Distance:"),
-            many1(preceded(space1, u64)
+            many1(preceded(space1, parse_u64)
         ))),
         |(_,times, _, _, records)|{
             times.into_iter().zip(records.into_iter()).map(|(time, record)|{
