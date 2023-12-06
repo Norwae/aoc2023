@@ -57,16 +57,14 @@ fn parse_part_2(input: &str) -> IResult<&str, Race> {
 }
 
 fn solve_race(race: &Race) -> u64 {
-    let mut count = 0;
+    let mut dropped = 1;
     // 0 and whole time never win, no need to look
-    for i in 1..race.time {
-        let distance_travelled = (race.time - i) * i;
 
-        if distance_travelled > race.record {
-            count += 1
-        }
+    while (race.time - dropped) * dropped < race.record {
+        dropped += 1
     }
-    count
+
+    race.time - 2 * dropped
 }
 
 fn part1(input: &String) -> u64 {
