@@ -1,6 +1,6 @@
 use nom::bytes::complete::tag;
 use nom::character::complete::{digit1, line_ending, space1, u64};
-use nom::combinator::{map, map_res};
+use nom::combinator::{map, map_res, peek};
 use nom::IResult;
 use nom::multi::{fold_many1, many1};
 use nom::sequence::{preceded, tuple};
@@ -11,8 +11,20 @@ struct Race {
     record: u64,
 }
 
-fn parse(input: &str) -> IResult<&str, String> {
-    Ok(("", input.to_string()))
+#[derive(Debug)]
+struct Input {
+    part1: Vec<Race>,
+    part2: Race
+}
+
+fn parse(input: &str) -> IResult<&str, Input> {
+    map(
+        tuple((
+        peek(parse_part_1),
+        parse_part_2
+    )), |(part1, part2)|{
+            Input { part1, part2 }
+        })(input)
 }
 
 fn parse_part_1(input: &str) -> IResult<&str, Vec<Race>> {
@@ -73,15 +85,12 @@ fn solve_race(race: &Race) -> u64 {
     race.time - 2 * lower - 1
 }
 
-fn part1(input: &String) -> u64 {
-    let (_, input) = parse_part_1(input).expect("successful parse");
-    input.iter().map(solve_race).product()
+fn part1(input: &Input) -> u64 {
+    input.part1.iter().map(solve_race).product()
 }
 
-fn part2(input: &String) -> u64 {
-    let (_, input) = parse_part_2(input).expect("successful parse");
-
-    solve_race(&input)
+fn part2(input: &Input) -> u64 {
+    solve_race(&input.part2)
 
 }
 
