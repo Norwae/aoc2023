@@ -52,8 +52,8 @@ struct Hand {
 
 
 impl Hand {
-    fn valuation<Classifier: FnOnce(&Self) -> ScoreClass>(&self, classifier: Classifier) -> Valuation {
-        let class = classifier(self);
+    fn valuation(&self) -> Valuation {
+        let class = self.score_class();
         let mut fingerprint = 0;
         for i in 0..5 {
             fingerprint = (fingerprint << 8) + self.cards[i] as u64
@@ -62,7 +62,7 @@ impl Hand {
         Valuation { class, fingerprint }
     }
 
-    fn score_class_part2(&self) -> ScoreClass {
+    fn score_class(&self) -> ScoreClass {
         let mut occurrance = [0; 14];
         for card in self.cards {
             occurrance[card as usize] += 1;
@@ -109,37 +109,6 @@ impl Hand {
         }
     }
 
-    fn score_class_part1(&self) -> ScoreClass {
-        let mut occurrance = [0; 14];
-        for card in self.cards {
-            occurrance[card as usize] += 1;
-        }
-        let mut seen_three = false;
-        let mut seen_two = false;
-
-        for o in occurrance {
-            match o {
-                5 => return FiveOfAKind,
-                4 => return FourOfAKind,
-                3 => seen_three = true,
-                2 if seen_two => return TwoPair,
-                2 => seen_two = true,
-                _ => {}
-            }
-        }
-
-        if seen_three {
-            if seen_two {
-                FullHouse
-            } else {
-                ThreeOfAKind
-            }
-        } else if seen_two {
-            Pair
-        } else {
-            HighCard
-        }
-    }
 }
 
 
@@ -184,7 +153,7 @@ fn parse(input: &str) -> IResult<&str, Vec<Hand>> {
 fn part1(input: &Vec<Hand>) -> u64 {
     let mut input = input.clone();
 
-    input.sort_by_cached_key(|hand|hand.valuation(Hand::score_class_part1));
+    input.sort_by_cached_key(|hand|hand.valuation());
     let mut sum = 0;
 
     for (rank, hand) in input.iter().enumerate() {
@@ -204,7 +173,7 @@ fn part2(input: &Vec<Hand>) -> u64 {
         }
         hand
     }).collect::<Vec<_>>();
-    input.sort_by_cached_key(|hand|hand.valuation(Hand::score_class_part2));
+    input.sort_by_cached_key(|hand|hand.valuation());
     let mut sum = 0;
 
     for (rank, hand) in input.iter().enumerate() {
