@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::cmp::Ordering;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
@@ -7,6 +8,12 @@ use nom::IResult;
 use nom::multi::separated_list1;
 use nom::sequence::tuple;
 use crate::day7::ScoreClass::{FiveOfAKind, FourOfAKind, FullHouse, HighCard, Pair, ThreeOfAKind, TwoPair};
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+struct Valuation {
+    class: ScoreClass,
+    fingerprint: u64
+}
 
 #[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Copy, Clone)]
 enum ScoreClass {
@@ -21,6 +28,7 @@ enum ScoreClass {
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
 enum CardType {
+    Joker,
     _2,
     _3,
     _4,
@@ -36,42 +44,43 @@ enum CardType {
     Ace,
 }
 
-impl CardType {
-    fn part2_special_cmp(&self, other: &CardType) -> Ordering {
-        if *self == CardType::Jack {
-            if *other == CardType::Jack {
-                Ordering::Equal
-            } else {
-                Ordering::Less
-            }
-        } else if *other == CardType::Jack {
-            Ordering::Greater
-        } else {
-            self.cmp(other)
-        }
-    }
-}
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 struct Hand {
     cards: [CardType; 5],
     bet: u64,
+    valuation: RefCell<Option<Valuation>>
 }
 
 
 impl Hand {
 
+    fn valuation<Classifier: FnOnce(&Self) -> ScoreClass>(&self, classifier: Classifier) -> Valuation {
+        let mut valuation = self.valuation.borrow_mut();
+
+        if valuation.is_none() {
+            let class = classifier(self);
+            let mut fingerprint = 0;
+            for i in 0..5 {
+                fingerprint = (fingerprint << 8) + self.cards[i] as u64
+            }
+            *valuation = Some(Valuation{ class, fingerprint })
+        }
+
+        valuation.unwrap()
+    }
+
     fn score_class_part2(&self) -> ScoreClass {
-        let mut occurrance = [0; 13];
+        let mut occurrance = [0; 14];
         for card in self.cards {
             occurrance[card as usize] += 1;
         }
         let mut seen_two = 0;
         let mut seen_three = false;
-        let jokers = occurrance[CardType::Jack as usize];
-        occurrance[CardType::Jack as usize] = 0;
+        let jokers = occurrance[CardType::Joker as usize];
 
-        for o in occurrance {
+        for o in 1..14 {
+            let o = occurrance[o];
             match o {
                 5 => return FiveOfAKind,
                 4 if jokers == 1 => return FiveOfAKind,
@@ -109,7 +118,7 @@ impl Hand {
     }
 
     fn score_class_part1(&self) -> ScoreClass {
-        let mut occurrance = [0; 13];
+        let mut occurrance = [0; 14];
         for card in self.cards {
             occurrance[card as usize] += 1;
         }
@@ -140,30 +149,16 @@ impl Hand {
         }
     }
 
-    fn cmp_generic<Classifier: Fn(&Hand) -> ScoreClass, Comparator: Fn(&CardType, &CardType) -> Ordering>(
-        &self, other: &Self, classifier: Classifier, comparator: Comparator
+    fn cmp_generic<Classifier: Fn(&Hand) -> ScoreClass>(
+        &self, other: &Self, classifier: Classifier
     ) -> Ordering {
-
-        match classifier(self).cmp(&classifier(other)) {
-            Ordering::Equal => {
-                for i in 0..5 {
-                    let card_compare = comparator(&self.cards[i], &other.cards[i]);
-
-                    if card_compare != Ordering::Equal {
-                        return card_compare;
-                    }
-                }
-
-                return Ordering::Equal;
-            }
-            ord => ord
-        }
+        self.valuation(&classifier).cmp(&other.valuation(&classifier))
     }
     fn cmp_part1(&self, other: &Self) -> Ordering {
-        self.cmp_generic(other, Self::score_class_part1, CardType::cmp)
+        self.cmp_generic(other, Self::score_class_part1)
     }
     fn cmp_part2(&self, other: &Self) -> Ordering {
-        self.cmp_generic(other, Self::score_class_part2, CardType::part2_special_cmp)
+        self.cmp_generic(other, Self::score_class_part2)
     }
 }
 
@@ -196,7 +191,7 @@ fn parse_hand(input: &str) -> IResult<&str, Hand> {
          space1,
          parse_u64
         )), |(c1, c2, c3, c4, c5, _, bet)|
-            Hand { cards: [c1, c2, c3, c4, c5], bet },
+            Hand { cards: [c1, c2, c3, c4, c5], bet, valuation: RefCell::new(None) },
     )(input)
 }
 
@@ -216,7 +211,15 @@ fn part1(input: &Vec<Hand>) -> u64 {
     sum
 }
 fn part2(input: &Vec<Hand>) -> u64 {
-    let mut input = input.clone();
+    let mut input = input.iter().map(|hand|{
+        let mut hand = hand.clone();
+        for i in 0..5 {
+            if hand.cards[i] == CardType::Jack {
+                hand.cards[i] = CardType::Joker
+            }
+        }
+        hand
+    }).collect::<Vec<_>>();
     input.sort_by(Hand::cmp_part2);
     let mut sum = 0;
 
