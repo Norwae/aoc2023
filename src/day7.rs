@@ -99,7 +99,7 @@ impl Hand {
             }
         } else {
             match jokers {
-                4 => FiveOfAKind,
+                4.. => FiveOfAKind,
                 3 => FourOfAKind,
                 2 => ThreeOfAKind,
                 1 => Pair,
