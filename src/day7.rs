@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::cmp::Ordering;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{line_ending, space1, u64 as parse_u64};
@@ -7,12 +5,13 @@ use nom::combinator::{map, value};
 use nom::IResult;
 use nom::multi::separated_list1;
 use nom::sequence::tuple;
+
 use crate::day7::ScoreClass::{FiveOfAKind, FourOfAKind, FullHouse, HighCard, Pair, ThreeOfAKind, TwoPair};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
 struct Valuation {
     class: ScoreClass,
-    fingerprint: u64
+    fingerprint: u64,
 }
 
 #[derive(Debug, Ord, PartialOrd, PartialEq, Eq, Copy, Clone)]
@@ -49,25 +48,18 @@ enum CardType {
 struct Hand {
     cards: [CardType; 5],
     bet: u64,
-    valuation: RefCell<Option<Valuation>>
 }
 
 
 impl Hand {
-
     fn valuation<Classifier: FnOnce(&Self) -> ScoreClass>(&self, classifier: Classifier) -> Valuation {
-        let mut valuation = self.valuation.borrow_mut();
-
-        if valuation.is_none() {
-            let class = classifier(self);
-            let mut fingerprint = 0;
-            for i in 0..5 {
-                fingerprint = (fingerprint << 8) + self.cards[i] as u64
-            }
-            *valuation = Some(Valuation{ class, fingerprint })
+        let class = classifier(self);
+        let mut fingerprint = 0;
+        for i in 0..5 {
+            fingerprint = (fingerprint << 8) + self.cards[i] as u64
         }
 
-        valuation.unwrap()
+        Valuation { class, fingerprint }
     }
 
     fn score_class_part2(&self) -> ScoreClass {
@@ -148,18 +140,6 @@ impl Hand {
             HighCard
         }
     }
-
-    fn cmp_generic<Classifier: Fn(&Hand) -> ScoreClass>(
-        &self, other: &Self, classifier: Classifier
-    ) -> Ordering {
-        self.valuation(&classifier).cmp(&other.valuation(&classifier))
-    }
-    fn cmp_part1(&self, other: &Self) -> Ordering {
-        self.cmp_generic(other, Self::score_class_part1)
-    }
-    fn cmp_part2(&self, other: &Self) -> Ordering {
-        self.cmp_generic(other, Self::score_class_part2)
-    }
 }
 
 
@@ -191,7 +171,7 @@ fn parse_hand(input: &str) -> IResult<&str, Hand> {
          space1,
          parse_u64
         )), |(c1, c2, c3, c4, c5, _, bet)|
-            Hand { cards: [c1, c2, c3, c4, c5], bet, valuation: RefCell::new(None) },
+            Hand { cards: [c1, c2, c3, c4, c5], bet },
     )(input)
 }
 
@@ -199,9 +179,12 @@ fn parse(input: &str) -> IResult<&str, Vec<Hand>> {
     separated_list1(line_ending, parse_hand)(input)
 }
 
+
+
 fn part1(input: &Vec<Hand>) -> u64 {
     let mut input = input.clone();
-    input.sort_by(Hand::cmp_part1);
+
+    input.sort_by_cached_key(|hand|hand.valuation(Hand::score_class_part1));
     let mut sum = 0;
 
     for (rank, hand) in input.iter().enumerate() {
@@ -210,8 +193,9 @@ fn part1(input: &Vec<Hand>) -> u64 {
 
     sum
 }
+
 fn part2(input: &Vec<Hand>) -> u64 {
-    let mut input = input.iter().map(|hand|{
+    let mut input = input.iter().map(|hand| {
         let mut hand = hand.clone();
         for i in 0..5 {
             if hand.cards[i] == CardType::Jack {
@@ -220,7 +204,7 @@ fn part2(input: &Vec<Hand>) -> u64 {
         }
         hand
     }).collect::<Vec<_>>();
-    input.sort_by(Hand::cmp_part2);
+    input.sort_by_cached_key(|hand|hand.valuation(Hand::score_class_part2));
     let mut sum = 0;
 
     for (rank, hand) in input.iter().enumerate() {
