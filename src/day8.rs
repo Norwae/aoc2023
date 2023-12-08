@@ -1,12 +1,12 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter, Write};
 use std::str::FromStr;
-use nom::bytes::complete::{tag, take, take_until, take_while1};
-use nom::bytes::streaming::take_until1;
-use nom::character::complete::{line_ending, one_of};
+
+use nom::bytes::complete::{tag, take, take_while1};
+use nom::character::complete::line_ending;
 use nom::combinator::{map, map_res};
 use nom::IResult;
-use nom::multi::{fold_many1, fold_many_m_n, separated_list1};
+use nom::multi::fold_many1;
 use nom::sequence::{terminated, tuple};
 
 #[derive(Debug)]
@@ -106,48 +106,39 @@ fn parse(input: &str) -> IResult<&str, Input> {
     )), |(directions, _, _, map_nodes)| Input { directions, map_nodes })(input)
 }
 
-fn part1(input: &Input) -> i32 {
-    let mut endless_looping_iter = input.directions.iter().cycle();
-    let mut current = Tag::from_str("AAA").unwrap();
+fn part1(input: &Input) -> u64 {
+    let start = Tag::from_str("AAA").unwrap();
     let goal = Tag::from_str("ZZZ").unwrap();
-    let mut steps = 0;
 
-    while current != goal {
-        steps += 1;
-        let direction = *endless_looping_iter.next().unwrap();
+    steps_to_goal(input, start, |it| *it == goal)
+}
+
+fn steps_to_goal(input: &Input, mut current: Tag, condition: impl Fn(&Tag) -> bool) -> u64 {
+    let mut steps= 0;
+
+    while !condition(&current){
+        let direction = input.directions[steps % input.directions.len()];
         let fork = input.map_nodes[&current];
 
         current = if direction == Direction::Left {
             fork.0
         } else {
             fork.1
-        }
+        };
+
+        steps += 1;
     }
 
-    steps
+    steps as u64
 }
 
 fn part2(input: &Input) -> u64 {
-    let mut endless_looping_iter = input.directions.iter().cycle();
-    let mut starts = input.map_nodes.keys().filter(|n| n.ends_with(b'A')).cloned().collect::<Vec<_>>();
+    let starts = input.map_nodes.keys().filter(|n| n.ends_with(b'A')).cloned();
     let mut overall = 1;
 
 
     for current in starts {
-        let mut cursor = current;
-        let mut steps = 0;
-        while !cursor.ends_with(b'Z') {
-            steps += 1;
-            let direction = *endless_looping_iter.next().unwrap();
-            let fork = input.map_nodes[&cursor];
-
-            cursor = if direction == Direction::Left {
-                fork.0
-            } else {
-                fork.1
-            }
-        }
-
+        let steps = steps_to_goal(input, current, |it| it.ends_with(b'Z'));
 
         overall = num::integer::lcm(overall, steps);
     }
