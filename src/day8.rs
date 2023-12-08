@@ -127,32 +127,32 @@ fn part1(input: &Input) -> i32 {
     steps
 }
 
-fn part2(input: &Input) -> &'static str {
-    return "dnf";
+fn part2(input: &Input) -> u64 {
     let mut endless_looping_iter = input.directions.iter().cycle();
-    let mut current = input.map_nodes.keys().filter(|n| n.ends_with(b'A')).cloned().collect::<HashSet<_>>();
+    let mut starts = input.map_nodes.keys().filter(|n| n.ends_with(b'A')).cloned().collect::<Vec<_>>();
+    let mut overall = 1;
 
-    let mut steps = 0;
 
-    while current.iter().any(|it| !it.ends_with(b'Z')) {
-        if steps % 10000 == 0 {
-            dbg!(steps, &current);
-        }
+    for current in starts {
+        let mut cursor = current;
+        let mut steps = 0;
+        while !cursor.ends_with(b'Z') {
+            steps += 1;
+            let direction = *endless_looping_iter.next().unwrap();
+            let fork = input.map_nodes[&cursor];
 
-        steps += 1;
-        let direction = *endless_looping_iter.next().unwrap();
-        current = current.into_iter().map(|tag| {
-            let fork = input.map_nodes[&tag];
-
-            if direction == Direction::Left {
+            cursor = if direction == Direction::Left {
                 fork.0
             } else {
                 fork.1
             }
-        }).collect();
+        }
+
+
+        overall = num::integer::lcm(overall, steps);
     }
 
-    unreachable!()
+    overall
 }
 
 solution!(parse, part1, part2);
