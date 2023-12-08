@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt::{Debug, Display, Formatter, Write};
+use std::hash::Hash;
 use std::str::FromStr;
 
 use nom::bytes::complete::{tag, take, take_while1};
@@ -13,6 +14,15 @@ use nom::sequence::{terminated, tuple};
 struct Input {
     directions: Vec<Direction>,
     map_nodes: HashMap<Tag, (Tag, Tag)>,
+}
+
+impl Input {
+    fn new(directions: Vec<Direction>, map_nodes: HashMap<Tag, (Tag, Tag)>) -> Self {
+        Input {
+            directions,
+            map_nodes,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -103,8 +113,11 @@ fn parse(input: &str) -> IResult<&str, Input> {
                        acc.insert(from, to);
                        acc
                    })
-    )), |(directions, _, _, map_nodes)| Input { directions, map_nodes })(input)
+    )), |(directions, _, _, map_nodes)| Input::new(directions, map_nodes))(input)
 }
+
+// assumption: The periodicity of the map is without a "lead in" of n < p steps (or formally, n = 0)
+// this holds on all inputs I've seen, but needs to be acknowledged
 
 fn part1(input: &Input) -> u64 {
     let start = Tag::from_str("AAA").unwrap();
@@ -114,9 +127,9 @@ fn part1(input: &Input) -> u64 {
 }
 
 fn steps_to_goal(input: &Input, mut current: Tag, condition: impl Fn(&Tag) -> bool) -> u64 {
-    let mut steps= 0;
+    let mut steps = 0;
 
-    while !condition(&current){
+    while !condition(&current) {
         let direction = input.directions[steps % input.directions.len()];
         let fork = input.map_nodes[&current];
 
@@ -135,7 +148,6 @@ fn steps_to_goal(input: &Input, mut current: Tag, condition: impl Fn(&Tag) -> bo
 fn part2(input: &Input) -> u64 {
     let starts = input.map_nodes.keys().filter(|n| n.ends_with(b'A')).cloned();
     let mut overall = 1;
-
 
     for current in starts {
         let steps = steps_to_goal(input, current, |it| it.ends_with(b'Z'));
