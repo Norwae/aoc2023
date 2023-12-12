@@ -109,12 +109,11 @@ fn parse(input: &str) -> IResult<&str, Input> {
 }
 
 fn first_step(start: Index2D, layout: &Flat2DArray<PipeSegment>) -> (Direction, Index2D) {
-
     for first_step in Direction::ALL {
         let stepped = start + first_step;
 
         if layout[stepped].is_open(first_step.opposite()) {
-            return (first_step.opposite(), stepped)
+            return (first_step.opposite(), stepped);
         }
     }
 
@@ -138,7 +137,6 @@ fn solve_1(input: &Input) -> usize {
 }
 
 fn solve_2(input: &Input) -> usize {
-
     let layout = &input.data;
     let (mut from, mut index) = first_step(input.start, &input.data);
     let mut path: Vec<Coord<i32>> = vec![input.start.into()];
@@ -157,22 +155,21 @@ fn solve_2(input: &Input) -> usize {
     let poly = Polygon::new(LineString(path), Vec::new());
 
     for y in 0..layout.rows() {
-        let mut had_contact = false;
-        for x in 0..layout.columns() {
-            let index = Index2D(x as i32, y as i32);
+        let in_this_row = outline.iter().filter_map(|coord| if coord.y as usize == y {
+            Some(coord.x)
+        } else {
+            None
+        }).collect::<Vec<_>>();
+        let start = in_this_row.iter().cloned().min().unwrap_or(i32::MAX);
+        let end = in_this_row.iter().cloned().max().unwrap_or(i32::MIN);
+        for x in start..end {
+            let index = Index2D(x, y as i32);
             let coord: Coord<i32> = index.into();
-            let outline_touched = outline.contains(&coord);
-
-            if !had_contact && !outline_touched {
-                continue
-            }
-
-            had_contact = true;
+            let outline_touched = in_this_row.contains(&x);
 
             if !outline_touched && poly.contains(&coord) {
                 count += 1
             }
-
         }
     }
 
