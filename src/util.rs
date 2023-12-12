@@ -1,5 +1,5 @@
 use std::ops::{Add, Index, IndexMut};
-use geo::Coord;
+use geo::{Coord, CoordNum};
 use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -26,11 +26,11 @@ impl Direction {
 pub struct Index2D(pub i32, pub i32);
 
 
-impl Into<Coord> for Index2D {
-    fn into(self) -> Coord {
+impl <T: CoordNum + From<i32>> Into<Coord<T>> for Index2D {
+    fn into(self) -> Coord<T> {
         Coord {
-            x: self.0 as f64,
-            y: self.1 as f64
+            x: self.0.into(),
+            y: self.1.into()
         }
     }
 }

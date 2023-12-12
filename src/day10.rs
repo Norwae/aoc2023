@@ -141,9 +141,7 @@ fn solve_2(input: &Input) -> usize {
 
     let layout = &input.data;
     let (mut from, mut index) = first_step(input.start, &input.data);
-    let mut outline = HashSet::new();
-    outline.insert(input.start);
-    let mut path = vec![input.start.into()];
+    let mut path: Vec<Coord<i32>> = vec![input.start.into()];
 
     while index != input.start {
         let at_index = layout[index];
@@ -151,19 +149,19 @@ fn solve_2(input: &Input) -> usize {
 
         from = to.opposite();
         index = index + to;
-        outline.insert(index);
         path.push(index.into())
     }
 
     let mut count = 0;
+    let outline = path.clone();
     let poly = Polygon::new(LineString(path), Vec::new());
 
     for y in 0..layout.rows() {
         for x in 0..layout.columns() {
             let index = Index2D(x as i32, y as i32);
-            let coord: Coord = index.into();
+            let coord: Coord<i32> = index.into();
 
-            if !outline.contains(&index) && poly.contains(&coord) {
+            if !outline.contains(&coord) && poly.contains(&coord) {
                 count += 1
             }
 
