@@ -157,11 +157,19 @@ fn solve_2(input: &Input) -> usize {
     let poly = Polygon::new(LineString(path), Vec::new());
 
     for y in 0..layout.rows() {
+        let mut had_contact = false;
         for x in 0..layout.columns() {
             let index = Index2D(x as i32, y as i32);
             let coord: Coord<i32> = index.into();
+            let outline_touched = outline.contains(&coord);
 
-            if !outline.contains(&coord) && poly.contains(&coord) {
+            if !had_contact && !outline_touched {
+                continue
+            }
+
+            had_contact = true;
+
+            if !outline_touched && poly.contains(&coord) {
                 count += 1
             }
 
