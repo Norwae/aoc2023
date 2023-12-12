@@ -1,4 +1,5 @@
 use std::ops::{Add, Index, IndexMut};
+use geo::Coord;
 use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -21,8 +22,18 @@ impl Direction {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Index2D(pub i32, pub i32);
+
+
+impl Into<Coord> for Index2D {
+    fn into(self) -> Coord {
+        Coord {
+            x: self.0 as f64,
+            y: self.1 as f64
+        }
+    }
+}
 
 impl Add<Direction> for  Index2D {
     type Output = Index2D;
@@ -45,10 +56,18 @@ pub struct Flat2DArray<T> {
 }
 
 impl<T> Flat2DArray<T> {
-    pub(crate) fn from_data(out_of_bounds_element: T, contents: Vec<T>, columns: usize) -> Self {
+    pub fn from_data(out_of_bounds_element: T, contents: Vec<T>, columns: usize) -> Self {
         assert_eq!(contents.len() % columns, 0);
 
         Self { contents, columns, out_of_bounds_element }
+    }
+
+    pub fn rows(&self) -> usize {
+        self.contents.len() / self.columns
+    }
+
+    pub fn columns(&self) -> usize {
+        self.columns
     }
 
     fn range_check(&self, x: i32, y: i32) -> bool {

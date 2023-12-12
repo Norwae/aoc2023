@@ -1,4 +1,6 @@
+use std::collections::HashSet;
 use std::ops::{Add, Index, IndexMut};
+use geo::{Contains, Coord, LineString, Polygon};
 
 use nom::IResult;
 
@@ -17,6 +19,7 @@ enum PipeSegment {
     Starter,
     Ground,
 }
+
 
 impl PipeSegment {
     fn is_open(self, d: Direction) -> bool {
@@ -134,5 +137,41 @@ fn solve_1(input: &Input) -> usize {
     (count + 1) / 2
 }
 
+fn solve_2(input: &Input) -> usize {
 
-solution!(parse, solve_1);
+    let layout = &input.data;
+    let (mut from, mut index) = first_step(input.start, &input.data);
+    let mut outline = HashSet::new();
+    outline.insert(input.start);
+    let mut path = vec![input.start.into()];
+
+    while index != input.start {
+        let at_index = layout[index];
+        let to = at_index.exit_opening(from).expect("pipe is not broken");
+
+        from = to.opposite();
+        index = index + to;
+        outline.insert(index);
+        path.push(index.into())
+    }
+
+    let mut count = 0;
+    let poly = Polygon::new(LineString(path), Vec::new());
+
+    for y in 0..layout.rows() {
+        for x in 0..layout.columns() {
+            let index = Index2D(x as i32, y as i32);
+            let coord: Coord = index.into();
+
+            if !outline.contains(&index) && poly.contains(&coord) {
+                count += 1
+            }
+
+        }
+    }
+
+    count
+}
+
+
+solution!(parse, solve_1, solve_2);
