@@ -1,3 +1,5 @@
+extern crate core;
+
 use std::fs;
 use std::fmt::Display;
 use std::time::{Duration, Instant};
