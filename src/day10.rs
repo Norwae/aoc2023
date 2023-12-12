@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-use std::ops::{Add, Index, IndexMut};
 use geo::{Contains, Coord, LineString, Polygon};
 
 use nom::IResult;

@@ -1,5 +1,4 @@
-use std::ops::{Range, RangeInclusive};
-use nom::combinator::rest;
+use std::ops::Range;
 use nom::IResult;
 use crate::util::Index2D;
 
@@ -74,7 +73,7 @@ fn part2(input: &Input) -> u64 {
 fn compute_sum(input: &Input, row_weights: &Vec<u64>, col_weights: &Vec<u64>) -> u64 {
     let mut sum = 0;
     for (off, g1) in input.galaxies[0..input.galaxies.len() - 1].into_iter().enumerate() {
-        for (o2, g2) in input.galaxies[1 + off..].into_iter().enumerate() {
+        for (_, g2) in input.galaxies[1 + off..].into_iter().enumerate() {
             let dist = galaxy_distance(&row_weights, &col_weights, *g1, *g2);
             sum += dist
         }
