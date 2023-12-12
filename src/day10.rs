@@ -136,7 +136,7 @@ fn solve_1(input: &Input) -> usize {
     (count + 1) / 2
 }
 
-fn solve_2(input: &Input) -> usize {
+fn solve_2(input: &Input) -> i32 {
     let layout = &input.data;
     let (mut from, mut index) = first_step(input.start, &input.data);
     let mut path: Vec<Coord<i32>> = vec![input.start.into()];
@@ -155,20 +155,29 @@ fn solve_2(input: &Input) -> usize {
     let poly = Polygon::new(LineString(path), Vec::new());
 
     for y in 0..layout.rows() {
-        let in_this_row = outline.iter().filter_map(|coord| if coord.y as usize == y {
+        let mut in_this_row = outline.iter().filter_map(|coord| if coord.y as usize == y {
             Some(coord.x)
         } else {
             None
         }).collect::<Vec<_>>();
-        let start = in_this_row.iter().cloned().min().unwrap_or(i32::MAX);
-        let end = in_this_row.iter().cloned().max().unwrap_or(i32::MIN);
-        for x in start..end {
-            let index = Index2D(x, y as i32);
-            let coord: Coord<i32> = index.into();
-            let outline_touched = in_this_row.contains(&x);
+        in_this_row.sort();
 
-            if !outline_touched && poly.contains(&coord) {
-                count += 1
+        if in_this_row.is_empty() {
+            continue
+        }
+
+        let spans = in_this_row.iter().zip(in_this_row.iter().skip(1));
+        for (start, end) in spans {
+            let span_length = end - start - 1;
+
+            if span_length == 0 {
+                continue
+            }
+            let index = Index2D(*start + 1, y as i32);
+            let coord: Coord<i32> = index.into();
+
+            if poly.contains(&coord) {
+                count += span_length
             }
         }
     }
