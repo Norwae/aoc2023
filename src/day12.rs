@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
+
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{line_ending, space1, u32 as parse_u32};
-use nom::combinator::{map, opt, value};
+use nom::combinator::{map, value};
 use nom::IResult;
-use nom::multi::{length_count, many1, separated_list1};
+use nom::multi::{many1, separated_list1};
 use nom::sequence::tuple;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -85,7 +86,6 @@ impl <'a> SubProblem<'a> {
             let next_length = *next_length as usize;
             let mut slice = &self.states[..];
 
-
             while slice.len() >= next_length + 1 {
                 match slice[0] {
                     SpringState::DAMAGED if verify_damaged_section(slice, next_length) => {
@@ -135,7 +135,7 @@ impl Problem {
     fn unfold(&self) -> Self {
         let mut states = self.states.clone();
         let mut broken_series = self.broken_series.clone();
-        for i in 0..4 {
+        for _ in 0..4 {
             states.push(SpringState::UNKNOWN);
             states.extend_from_slice(&self.states);
             broken_series.extend_from_slice(&self.broken_series)

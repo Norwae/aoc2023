@@ -1,20 +1,21 @@
-use std::ops::{Range, RangeInclusive};
-use nom::combinator::rest;
+use std::ops::Range;
+
 use nom::IResult;
+
 use crate::util::Index2D;
 
 #[derive(Debug)]
 struct Input {
     galaxies: Vec<Index2D>,
     rows: usize,
-    columns: usize
+    columns: usize,
 }
 
-fn parse(input: &str) -> IResult<&str, Input>{
+fn parse(input: &str) -> IResult<&str, Input> {
     let mut result = Input {
         galaxies: vec![],
         rows: 0,
-        columns: 0
+        columns: 0,
     };
     for (y, line) in input.lines().enumerate() {
         for (x, byte) in line.bytes().enumerate() {
@@ -31,7 +32,7 @@ fn parse(input: &str) -> IResult<&str, Input>{
 }
 
 fn part1(input: &Input) -> u64 {
-    let row_weights = (0..input.rows).map(|i|{
+    let row_weights = (0..input.rows).map(|i| {
         if input.galaxies.iter().any(|Index2D(_, row)| *row as usize == i) {
             1
         } else {
@@ -39,7 +40,7 @@ fn part1(input: &Input) -> u64 {
         }
     }).collect::<Vec<_>>();
 
-    let col_weights = (0..input.columns).map(|i|{
+    let col_weights = (0..input.columns).map(|i| {
         if input.galaxies.iter().any(|Index2D(col, _)| *col as usize == i) {
             1
         } else {
@@ -51,8 +52,7 @@ fn part1(input: &Input) -> u64 {
 }
 
 fn part2(input: &Input) -> u64 {
-
-    let row_weights = (0..input.rows).map(|i|{
+    let row_weights = (0..input.rows).map(|i| {
         if input.galaxies.iter().any(|Index2D(_, row)| *row as usize == i) {
             1
         } else {
@@ -60,7 +60,7 @@ fn part2(input: &Input) -> u64 {
         }
     }).collect::<Vec<_>>();
 
-    let col_weights = (0..input.columns).map(|i|{
+    let col_weights = (0..input.columns).map(|i| {
         if input.galaxies.iter().any(|Index2D(col, _)| *col as usize == i) {
             1
         } else {
@@ -74,7 +74,7 @@ fn part2(input: &Input) -> u64 {
 fn compute_sum(input: &Input, row_weights: &Vec<u64>, col_weights: &Vec<u64>) -> u64 {
     let mut sum = 0;
     for (off, g1) in input.galaxies[0..input.galaxies.len() - 1].into_iter().enumerate() {
-        for (o2, g2) in input.galaxies[1 + off..].into_iter().enumerate() {
+        for g2 in input.galaxies[1 + off..].into_iter() {
             let dist = galaxy_distance(&row_weights, &col_weights, *g1, *g2);
             sum += dist
         }
@@ -99,7 +99,7 @@ fn galaxy_distance(row_weights: &Vec<u64>, col_weights: &Vec<u64>, from: Index2D
 }
 
 fn range_dist(weights: &Vec<u64>, range: Range<usize>) -> u64 {
-    range.map(|x|weights[x]).sum()
+    range.map(|x| weights[x]).sum()
 }
 
 solution!(parse, part1, part2);
