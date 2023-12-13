@@ -32,19 +32,22 @@ fn parse_maps(input: &str) -> IResult<&str, Vec<Flat2DArray<bool>>> {
     Ok(("", target))
 }
 
-fn find_reflection<Out: Eq + Copy, Container : Index<Index2D, Output=Out> + TwoDimensional>(data: &Container) -> Option<i32> {
-    (0..data.rows() as i32).into_iter().fold(Some(1), |start, row|{
-        if let Some(start) = start {
-            find_reflection_in_row(data, row, start)
-        } else {
-            None
-        }
-    })
+fn find_reflection<Out: Eq + Copy, Container : Index<Index2D, Output=Out> + TwoDimensional>(data: &Container) -> Vec<i32> {
+    let rows = data.rows() as i32;
+    let columns = data.columns() as i32;
+    let mut reflection_columns = (1..columns).collect();
+    for row in 0..rows {
+        find_reflections_in_row(data, row, &mut reflection_columns)
+    }
+
+    reflection_columns
 }
 
-fn find_reflection_in_row<Out: Eq + Copy, Container: Index<Index2D, Output=Out> + TwoDimensional>(data: &Container, row: i32, start_hint: i32) -> Option<i32> {
+fn find_reflections_in_row<Out: Eq + Copy, Container: Index<Index2D, Output=Out> + TwoDimensional>(data: &Container, row: i32, candidates: &mut Vec<i32>) {
+    let mut next_candidates = Vec::new();
     let columns = data.columns() as i32;
-    for cut in start_hint..columns {
+    for cut in candidates.iter() {
+        let cut = *cut;
         let left_range = 0..cut;
         let right_range = cut..columns;
         let left = left_range.map(|x|Index2D(x, row)).rev();
@@ -53,23 +56,23 @@ fn find_reflection_in_row<Out: Eq + Copy, Container: Index<Index2D, Output=Out> 
         let mut zip = left.zip(right).map(|(l, r)|(data[l], data[r]));
 
         if zip.all(|(l, r)| l == r) {
-            return Some(cut);
+            next_candidates.push(cut);
         }
-    }
+    };
 
-    None
+    *candidates = next_candidates;
 }
 
 fn solve_part1(input: &Vec<Flat2DArray<bool>>) -> i32 {
     let mut sum = 0;
 
     for input in input {
-        if let Some(line) = find_reflection(input) {
-            sum += line
-        } else {
-            let transposed = input.transpose();
-            let line = find_reflection(&transposed).expect("vertical reflection required");
-            sum += 100 * line
+        for vertical in find_reflection(input) {
+            sum += vertical
+        }
+        let transposed = input.transpose();
+        for horizontal in find_reflection(&transposed) {
+            sum += 100 * horizontal
         }
     }
 
