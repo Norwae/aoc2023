@@ -19,10 +19,23 @@ enum SpringState {
 struct Problem {
     states: Vec<SpringState>,
     broken_series: Vec<u32>,
+}
+
+struct SubProblem<'a> {
+    states: &'a [SpringState],
+    broken_series: &'a [u32],
     hashcode: u64
 }
 
-impl Hash for Problem {
+impl PartialEq for SubProblem<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.states == other.states && self.broken_series == other.broken_series
+    }
+}
+
+impl Eq for SubProblem<'_>{}
+
+impl Hash for SubProblem<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write_u64(self.hashcode)
     }
@@ -38,7 +51,6 @@ fn verify_all_compatible(slice: &[SpringState], expected: SpringState) -> bool {
 
     return true
 }
-
 fn verify_damaged_section(data: &[SpringState], length: usize) -> bool {
 
     verify_all_compatible(&data[..length], SpringState::DAMAGED) &&
@@ -46,21 +58,23 @@ fn verify_damaged_section(data: &[SpringState], length: usize) -> bool {
 }
 
 
-impl Problem {
-
-    fn new(states: Vec<SpringState>, broken_series:Vec<u32>) -> Self {
+impl SubProblem<'_> {
+    fn new<'a>(states: &'a [SpringState], broken_series: &'a [u32]) -> SubProblem<'a> {
         let mut hashcode = broken_series.len() as u64;
 
-        for state in &states {
+        for state in states {
             let (h1, _) = hashcode.overflowing_mul(37u64);
             let (h2, _) = h1.overflowing_add(*state as u64);
 
             hashcode = h2;
         }
 
-        Self { states, broken_series, hashcode }
+        SubProblem { states, broken_series, hashcode }
     }
-    fn arrangements_cached(self, cache: &mut HashMap<Problem, usize>) -> usize {
+}
+
+impl <'a> SubProblem<'a> {
+    fn arrangements_cached(self: SubProblem<'a>, cache: &mut HashMap<SubProblem<'a>, usize>) -> usize {
         if let Some(cached) = cache.get(&self) {
             return *cached
         }
@@ -75,13 +89,13 @@ impl Problem {
             while slice.len() >= next_length + 1 {
                 match slice[0] {
                     SpringState::DAMAGED if verify_damaged_section(slice, next_length) => {
-                        let sub_problem = Problem::new(Vec::from(&slice[next_length + 1..]), Vec::from(&self.broken_series[1..]));
+                        let sub_problem = SubProblem::new(&slice[next_length + 1..], &self.broken_series[1..]);
                         sum += sub_problem.arrangements_cached(cache);
                         break
                     },
                     SpringState::DAMAGED => break,
                     SpringState::UNKNOWN if verify_damaged_section(slice, next_length) => {
-                        let sub_problem = Problem::new(Vec::from(&slice[next_length + 1..]), Vec::from(&self.broken_series[1..]));
+                        let sub_problem = SubProblem::new(&slice[next_length + 1..], &self.broken_series[1..]);
                         sum += sub_problem.arrangements_cached(cache);
                     }
                     _ => () // continue loop
@@ -99,13 +113,22 @@ impl Problem {
         cache.insert(self, sum);
         sum
     }
+}
+
+impl Problem {
+
+    fn new(states: Vec<SpringState>, broken_series:Vec<u32>) -> Self {
+
+        Self { states, broken_series }
+    }
     fn arrangements(&self) -> usize {
         let mut cache = HashMap::new();
         let mut clone = self.clone();
         if !clone.states.ends_with(&[SpringState::OPERATIONAL]) {
             clone.states.push(SpringState::OPERATIONAL)
         }
-        let options = clone.arrangements_cached(&mut cache);
+        let whole = SubProblem::new(&clone.states, &clone.broken_series);
+        let options = whole.arrangements_cached(&mut cache);
         options
     }
 
