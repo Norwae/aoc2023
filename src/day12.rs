@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{line_ending, space1, u32 as parse_u32};
-use nom::combinator::{map, value};
+use nom::combinator::{map, opt, value};
 use nom::IResult;
-use nom::multi::{many1, separated_list1};
+use nom::multi::{length_count, many1, separated_list1};
 use nom::sequence::tuple;
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -13,75 +15,110 @@ enum SpringState {
     OPERATIONAL,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 struct Problem {
     states: Vec<SpringState>,
     broken_series: Vec<u32>,
+    hashcode: u64
 }
 
-impl Problem {
-    fn series_plausible(&self) -> bool {
-        let mut in_series = false;
-        let mut series = Vec::new();
+impl Hash for Problem {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write_u64(self.hashcode)
+    }
+}
 
-        for state in &self.states {
-            match state {
-                SpringState::UNKNOWN => {
-                    let n = series.len();
-                    if in_series {
-                        return n <= self.broken_series.len() &&
-                            series[0..n - 1] == self.broken_series[0..n - 1] &&
-                            series[n - 1] <= self.broken_series[n - 1];
-                    } else {
-                        return n <= self.broken_series.len() &&
-                            series == self.broken_series[0..n];
-                    }
-                }
-                SpringState::DAMAGED => {
-                    if !in_series {
-                        series.push(0);
-                    }
-                    in_series = true;
-                    *series.last_mut().unwrap() += 1
-                }
-                SpringState::OPERATIONAL => {
-                    if in_series {
-                        in_series = false;
-                        if series.len() > self.broken_series.len() ||
-                            series != self.broken_series[0..series.len()] {
-                            return false;
-                        }
-                    }
-                }
-            }
+
+fn verify_all_compatible(slice: &[SpringState], expected: SpringState) -> bool {
+    for state in slice {
+        if *state != SpringState::UNKNOWN && *state != expected {
+            return false
         }
-
-        series == self.broken_series
     }
 
-    fn arrangements(self, target: &mut usize) -> Self {
-        let mut me = self;
-        let first_unknown = me.states.iter().position(|s| *s == SpringState::UNKNOWN);
-        if let Some(unknown) = first_unknown {
-            me.states[unknown] = SpringState::DAMAGED;
+    return true
+}
 
-            if me.series_plausible() {
-                me = me.arrangements(target)
+fn verify_damaged_section(data: &[SpringState], length: usize) -> bool {
+
+    verify_all_compatible(&data[..length], SpringState::DAMAGED) &&
+        verify_all_compatible(&data[length..=length], SpringState::OPERATIONAL)
+}
+
+
+impl Problem {
+
+    fn new(states: Vec<SpringState>, broken_series:Vec<u32>) -> Self {
+        let mut hashcode = broken_series.len() as u64;
+
+        for state in &states {
+            let (h1, _) = hashcode.overflowing_mul(37u64);
+            let (h2, _) = h1.overflowing_add(*state as u64);
+
+            hashcode = h2;
+        }
+
+        Self { states, broken_series, hashcode }
+    }
+    fn arrangements_cached(self, cache: &mut HashMap<Problem, usize>) -> usize {
+        if let Some(cached) = cache.get(&self) {
+            return *cached
+        }
+
+        let mut sum = 0;
+
+        if let Some(next_length) = self.broken_series.first() {
+            let next_length = *next_length as usize;
+            let mut slice = &self.states[..];
+
+
+            while slice.len() >= next_length + 1 {
+                match slice[0] {
+                    SpringState::DAMAGED if verify_damaged_section(slice, next_length) => {
+                        let sub_problem = Problem::new(Vec::from(&slice[next_length + 1..]), Vec::from(&self.broken_series[1..]));
+                        sum += sub_problem.arrangements_cached(cache);
+                        break
+                    },
+                    SpringState::DAMAGED => break,
+                    SpringState::UNKNOWN if verify_damaged_section(slice, next_length) => {
+                        let sub_problem = Problem::new(Vec::from(&slice[next_length + 1..]), Vec::from(&self.broken_series[1..]));
+                        sum += sub_problem.arrangements_cached(cache);
+                    }
+                    _ => () // continue loop
+                }
+                slice = &slice[1..]
             }
-
-            me.states[unknown] = SpringState::OPERATIONAL;
-
-            if me.series_plausible() {
-                me = me.arrangements(target)
-            }
-
-            me.states[unknown] = SpringState::UNKNOWN
         } else {
-            if me.series_plausible() {
-                *target += 1
+            sum = if verify_all_compatible(&self.states, SpringState::OPERATIONAL) {
+                1
+            } else {
+                0
             }
         }
-        me
+
+        cache.insert(self, sum);
+        sum
+    }
+    fn arrangements(&self) -> usize {
+        let mut cache = HashMap::new();
+        let mut clone = self.clone();
+        if !clone.states.ends_with(&[SpringState::OPERATIONAL]) {
+            clone.states.push(SpringState::OPERATIONAL)
+        }
+        let options = clone.arrangements_cached(&mut cache);
+        options
+    }
+
+    fn unfold(&self) -> Self {
+        let mut states = self.states.clone();
+        let mut broken_series = self.broken_series.clone();
+        for i in 0..4 {
+            states.push(SpringState::UNKNOWN);
+            states.extend_from_slice(&self.states);
+            broken_series.extend_from_slice(&self.broken_series)
+        }
+
+        Self::new(states, broken_series)
     }
 }
 
@@ -102,7 +139,7 @@ fn parse_problem(input: &str) -> IResult<&str, Problem> {
         many1(parse_state),
         space1,
         parse_series
-    )), |(states, _, broken_series)| Problem { states, broken_series })(input)
+    )), |(states, _, broken_series)| Problem::new(states, broken_series))(input)
 }
 
 fn parse(input: &str) -> IResult<&str, Vec<Problem>> {
@@ -112,10 +149,19 @@ fn parse(input: &str) -> IResult<&str, Vec<Problem>> {
 fn part_1(input: &Vec<Problem>) -> usize {
     let mut count = 0usize;
     for problem in input {
-        problem.clone().arrangements(&mut count);
+        count += problem.arrangements();
+    }
+    count
+}
+
+fn part_2(input: &Vec<Problem>) -> usize {
+
+    let mut count = 0usize;
+    for problem in input {
+        count += problem.unfold().arrangements();
     }
     count
 }
 
 
-solution!(parse, part_1);
+solution!(parse, part_1, part_2);
