@@ -2,6 +2,11 @@ use std::ops::{Add, Index, IndexMut};
 use geo::{Coord, CoordNum};
 use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
 
+pub trait TwoDimensional {
+    fn rows(&self) -> usize;
+    fn columns(&self) -> usize;
+}
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum Direction {
     EAST,
@@ -55,6 +60,7 @@ pub struct Flat2DArray<T> {
     out_of_bounds_element: T,
 }
 
+
 impl<T> Flat2DArray<T> {
     pub fn from_data(out_of_bounds_element: T, contents: Vec<T>, columns: usize) -> Self {
         assert_eq!(contents.len() % columns, 0);
@@ -76,8 +82,22 @@ impl<T> Flat2DArray<T> {
         (0..cols).contains(&x) && (0..len / cols).contains(&y)
     }
 
+    pub fn transpose(&self) -> Transposed<T> {
+        Transposed(self)
+    }
+
     fn linearize_index(&self, x: i32, y: i32) -> usize {
         y as usize * self.columns + x as usize
+    }
+}
+
+impl <T> TwoDimensional for Flat2DArray<T> {
+    fn rows(&self) -> usize {
+        self.contents.len() / self.columns
+    }
+
+    fn columns(&self) -> usize {
+        self.columns
     }
 }
 
@@ -104,5 +124,27 @@ impl<T> IndexMut<Index2D> for Flat2DArray<T> {
 
         let linear = self.linearize_index(x, y);
         &mut self.contents[linear]
+    }
+}
+
+pub struct Transposed<'a, T>(&'a Flat2DArray<T>);
+
+impl <T> Index<Index2D> for Transposed<'_, T> {
+    type Output = T;
+
+    fn index(&self, index: Index2D) -> &Self::Output {
+        let Index2D(x, y) = index;
+
+        &self.0[Index2D(y, x)]
+    }
+}
+
+impl <T> TwoDimensional for Transposed<'_, T> {
+    fn rows(&self) -> usize {
+        self.0.columns
+    }
+
+    fn columns(&self) -> usize {
+        self.0.rows()
     }
 }
