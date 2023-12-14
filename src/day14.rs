@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter, Write};
 use std::rc::Rc;
+
 use nom::IResult;
-use crate::util::{Direction, Index2D};
+
+use crate::util::Index2D;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum RockType {

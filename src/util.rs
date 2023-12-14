@@ -68,14 +68,6 @@ impl<T> Flat2DArray<T> {
         Self { contents, columns, out_of_bounds_element }
     }
 
-    pub fn rows(&self) -> usize {
-        self.contents.len() / self.columns
-    }
-
-    pub fn columns(&self) -> usize {
-        self.columns
-    }
-
     fn range_check(&self, x: i32, y: i32) -> bool {
         let cols = self.columns as i32;
         let len = self.contents.len() as i32;

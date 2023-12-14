@@ -3,7 +3,7 @@ use geo::{Contains, Coord, LineString, Polygon};
 use nom::IResult;
 
 pub use crate::util::Direction::{self, EAST, NORTH, SOUTH, WEST};
-use crate::util::{Flat2DArray, Index2D};
+use crate::util::{Flat2DArray, Index2D, TwoDimensional};
 
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
