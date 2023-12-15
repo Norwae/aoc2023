@@ -1,6 +1,6 @@
 use std::mem::swap;
 use std::ops::Index;
-use nom::IResult;
+
 use crate::util::{Flat2DArray, Index2D, TwoDimensional};
 
 trait ReflectionLineCandidate {
@@ -35,7 +35,7 @@ impl ReflectionLineCandidate for (i32, bool) {
     }
 }
 
-fn parse_maps(input: &str) -> IResult<&str, Vec<Flat2DArray<bool>>> {
+fn parse_maps(input: &str) -> Vec<Flat2DArray<bool>> {
     let mut target = Vec::new();
     let mut this_width = usize::MAX;
     let mut buffer = Vec::new();
@@ -62,7 +62,7 @@ fn parse_maps(input: &str) -> IResult<&str, Vec<Flat2DArray<bool>>> {
         target.push(map);
     }
 
-    Ok(("", target))
+    target
 }
 
 fn find_reflection<Out: Eq + Copy, Container: Index<Index2D, Output=Out> + TwoDimensional>(data: &Container) -> Vec<i32> {
@@ -150,4 +150,4 @@ fn solve_part2(input: &Vec<Flat2DArray<bool>>) -> i32 {
 
     sum
 }
-solution!(parse_maps, solve_part1, solve_part2);
+simple_solution!(parse_maps, solve_part1, solve_part2);

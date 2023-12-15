@@ -118,4 +118,4 @@ fn parse(input: &str) -> IResult<&str, Input> {
     Ok(("", target))
 }
 
-solution!(parse, part1, part2);
+nom_solution!(parse, part1, part2);

@@ -1,6 +1,6 @@
 use nom::bytes::complete::tag;
 use nom::character::complete::{digit1, line_ending, space1, u64 as parse_u64};
-use nom::combinator::{map, map_res, peek};
+use nom::combinator::{map, map_res};
 use nom::IResult;
 use nom::multi::{fold_many1, many1};
 use nom::sequence::{preceded, tuple};

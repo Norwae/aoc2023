@@ -2,8 +2,6 @@ use std::collections::HashMap;
 use std::fmt::{Display, Formatter, Write};
 use std::rc::Rc;
 
-use nom::IResult;
-
 use crate::util::Index2D;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -183,7 +181,7 @@ impl Input {
     }
 }
 
-fn parse(input: &str) -> IResult<&str, Input> {
+fn parse(input: &str) -> Input {
     let mut rocks = Vec::new();
     let mut max_row = 0;
 
@@ -207,7 +205,7 @@ fn parse(input: &str) -> IResult<&str, Input> {
         max_row = y as i32
     }
 
-    Ok(("", Input { max_row, rocks }))
+    Input { max_row, rocks }
 }
 
 fn part_1(input: &Input) -> i32 {
@@ -222,4 +220,4 @@ fn part_2(input: &Input) -> i32 {
     input.load()
 }
 
-solution!(parse, part_1, part_2);
+simple_solution!(parse, part_1, part_2);

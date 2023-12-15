@@ -1,5 +1,3 @@
-use nom::IResult;
-
 const STRING_VALUE_PAIRS: [(&'static str, i64); 9] = [
     ("one", -1),
     ("two", -2),
@@ -52,7 +50,7 @@ fn part2(input: &Vec<i64>) -> u64 {
     })
 }
 
-fn parse(mut input: &str) -> IResult<&str, Vec<i64>> {
+fn parse(mut input: &str) -> Vec<i64> {
     let mut result = Vec::new();
 
     while !input.is_empty() {
@@ -72,7 +70,7 @@ fn parse(mut input: &str) -> IResult<&str, Vec<i64>> {
         input = &input[1..]
     }
 
-    Ok(("", result))
+    result
 }
 
-solution!(parse, part1, part2);
+simple_solution!(parse, part1, part2);

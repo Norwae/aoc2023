@@ -158,4 +158,4 @@ fn part2(input: &Input) -> u64 {
     overall
 }
 
-solution!(parse, part1, part2);
+nom_solution!(parse, part1, part2);

@@ -183,4 +183,4 @@ fn part2(input: &Vec<Hand>) -> u64 {
     sum
 }
 
-solution!(parse, part1, part2);
+nom_solution!(parse, part1, part2);

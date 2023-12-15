@@ -1,7 +1,5 @@
 use std::ops::Range;
 
-use nom::IResult;
-
 use crate::util::Index2D;
 
 #[derive(Debug)]
@@ -11,7 +9,7 @@ struct Input {
     columns: usize,
 }
 
-fn parse(input: &str) -> IResult<&str, Input> {
+fn parse(input: &str) -> Input {
     let mut result = Input {
         galaxies: vec![],
         rows: 0,
@@ -28,7 +26,7 @@ fn parse(input: &str) -> IResult<&str, Input> {
         result.columns = line.len();
     }
 
-    Ok(("", result))
+    result
 }
 
 fn part1(input: &Input) -> u64 {
@@ -102,4 +100,4 @@ fn range_dist(weights: &Vec<u64>, range: Range<usize>) -> u64 {
     range.map(|x| weights[x]).sum()
 }
 
-solution!(parse, part1, part2);
+simple_solution!(parse, part1, part2);

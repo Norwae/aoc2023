@@ -176,4 +176,4 @@ fn part2(input: &Input) -> i64 {
     }).min().expect("At least one")
 }
 
-solution!(parse, part1, part2);
+nom_solution!(parse, part1, part2);

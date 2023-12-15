@@ -69,4 +69,4 @@ fn part2(input: &Vec<Card>) -> u64 {
     input.into_iter().map(|(_, v)| v).sum()
 }
 
-solution!(parse, part1, part2);
+nom_solution!(parse, part1, part2);

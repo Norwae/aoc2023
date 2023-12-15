@@ -46,4 +46,4 @@ fn solve_part_2(input: &Vec<Vec<i64>>) -> i64{
 }
 
 
-solution!(parse, solve_part_1, solve_part_2);
+nom_solution!(parse, solve_part_1, solve_part_2);

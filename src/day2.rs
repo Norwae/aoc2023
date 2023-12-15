@@ -95,4 +95,4 @@ fn part2(input: &Vec<BagState>) -> u64 {
     })
 }
 
-solution!(parse, part1, part2);
+nom_solution!(parse, part1, part2);

@@ -9,8 +9,52 @@ use nom::IResult;
 pub struct Context {
     total_duration: Duration,
     non_parse_duration: Duration,
-    longest: Option<Duration>
+    longest: Option<Duration>,
 }
+
+
+#[allow(dead_code)]
+fn part_2_absent<T>(_: &T) -> &'static str {
+    "???"
+}
+
+#[allow(dead_code)]
+fn not_solved<T: std::fmt::Debug>(input: &T) -> String { format!("Parse result: {:?}", input) }
+
+fn filename_for_module(module: &str) -> &str {
+    let cutoff = module.rfind("::").map(|found| found + 2).unwrap_or(0);
+    &module[cutoff..]
+}
+
+fn simply_parse<I>(mut f: impl FnMut(&str) -> I) -> impl FnMut(String) -> Option<I> {
+    move |input|
+        Some(f(&input))
+}
+
+macro_rules! simple_solution {
+    ($parse:path, $part1:path, $part2:path) => {
+        pub fn solve(ctx: &mut crate::Context) {
+            let path = module_path!();
+            crate::solve(ctx, crate::filename_for_module(&path), |input|Some($parse(&input)), $part1, $part2);
+        }
+    };
+    ($part1:path) => {
+        simple_solution!($part1, crate::part_2_absent);
+    }
+}
+
+macro_rules! nom_solution {
+    ($parse:path, $part1:path, $part2:path) => {
+        pub fn solve(ctx: &mut crate::Context) {
+            let path = module_path!();
+            crate::solve(ctx, crate::filename_for_module(&path), |input|crate::nom_parse(input, $parse), $part1, $part2);
+        }
+    };
+    ($part1:path) => {
+        simple_solution!($part1, crate::part_2_absent);
+    }
+}
+
 
 macro_rules! unparsed_solution {
     ($part1:path, $part2:path) => {
@@ -23,19 +67,6 @@ macro_rules! unparsed_solution {
         unparsed_solution!($part1, crate::part_2_absent);
     }
 }
-
-#[allow(dead_code)]
-fn part_2_absent<T>(_: &T) -> &'static str {
-    "???"
-}
-#[allow(dead_code)]
-fn not_solved<T: std::fmt::Debug>(input: &T)-> String{ format!("Parse result: {:?}", input)}
-
-fn filename_for_module(module: &str) -> &str {
-    let cutoff = module.rfind("::").map(|found|found + 2).unwrap_or(0);
-    &module[cutoff..]
-}
-
 
 macro_rules! solution {
     () => {
@@ -50,15 +81,15 @@ macro_rules! solution {
     ($parse:path, $part1:path, $part2:path) => {
         pub fn solve(ctx: &mut crate::Context) {
             let path = module_path!();
-            crate::solve(ctx, crate::filename_for_module(&path), |input|crate::parse_report_errors(input, $parse), $part1, $part2);
+            crate::solve(ctx, crate::filename_for_module(&path), $parse, $part1, $part2);
         }
     };
 }
 
-fn parse_report_errors<
+pub fn nom_parse<
     Parsed,
-    Parser: FnOnce(&str) -> IResult<&str, Parsed>
->(input: String, p: Parser) -> Option<Parsed> {
+    Parser: FnMut(&str) -> IResult<&str, Parsed>
+>(input: String, mut p: Parser) -> Option<Parsed> {
     let result = p(&input);
     return match result {
         Ok((rest, parsed)) => {
@@ -73,6 +104,7 @@ fn parse_report_errors<
         }
     };
 }
+
 
 fn solve<
     Intermediate,

@@ -1,10 +1,7 @@
 use geo::{Contains, Coord, LineString, Polygon};
 
-use nom::IResult;
-
-pub use crate::util::Direction::{self, EAST, NORTH, SOUTH, WEST};
 use crate::util::{Flat2DArray, Index2D, TwoDimensional};
-
+pub use crate::util::Direction::{self, EAST, NORTH, SOUTH, WEST};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum PipeSegment {
@@ -69,7 +66,7 @@ struct Input {
     start: Index2D,
 }
 
-fn parse(input: &str) -> IResult<&str, Input> {
+fn parse(input: &str) -> Input {
     let mut columns = usize::MAX;
     let mut start = Index2D(-1, -1);
     let mut data = Vec::new();
@@ -100,10 +97,10 @@ fn parse(input: &str) -> IResult<&str, Input> {
         }
     }
 
-    Ok(("", Input {
+    Input {
         data: Flat2DArray::from_data(PipeSegment::Ground, data, columns),
         start,
-    }))
+    }
 }
 
 fn first_step(start: Index2D, layout: &Flat2DArray<PipeSegment>) -> (Direction, Index2D) {
@@ -184,4 +181,4 @@ fn solve_2(input: &Input) -> i32 {
 }
 
 
-solution!(parse, solve_1, solve_2);
+simple_solution!(parse, solve_1, solve_2);

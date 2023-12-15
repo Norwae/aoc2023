@@ -187,4 +187,4 @@ fn part_2(input: &Vec<Problem>) -> usize {
 }
 
 
-solution!(parse, part_1, part_2);
+nom_solution!(parse, part_1, part_2);
