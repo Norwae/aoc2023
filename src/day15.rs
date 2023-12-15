@@ -31,10 +31,6 @@ impl <'a> TrivialHashMap<'a> {
     }
 }
 
-fn no_parse(input: &str) -> IResult<&str, String> {
-    Ok(("", input.to_string()))
-}
-
 fn hash(fragment: &str) -> u8{
     let mut hash = 0u8;
     for ascii in fragment.bytes() {
@@ -102,4 +98,4 @@ fn part2(input: &String) -> usize {
     map.checksum()
 }
 
-solution!(no_parse, part1, part2);
+unparsed_solution!(part1, part2);

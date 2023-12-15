@@ -12,24 +12,45 @@ pub struct Context {
     longest: Option<Duration>
 }
 
+macro_rules! unparsed_solution {
+    ($part1:path, $part2:path) => {
+        pub fn solve(ctx: &mut crate::Context) {
+            let path = module_path!();
+            crate::solve(ctx, crate::filename_for_module(&path), |input|Some(input), $part1, $part2);
+        }
+    };
+    ($part1:path) => {
+        unparsed_solution!($part1, crate::part_2_absent);
+    }
+}
+
+#[allow(dead_code)]
+fn part_2_absent<T>(_: &T) -> &'static str {
+    "???"
+}
+#[allow(dead_code)]
+fn not_solved<T: std::fmt::Debug>(input: &T)-> String{ format!("Parse result: {:?}", input)}
+
+fn filename_for_module(module: &str) -> &str {
+    let cutoff = module.rfind("::").map(|found|found + 2).unwrap_or(0);
+    &module[cutoff..]
+}
+
+
 macro_rules! solution {
     () => {
         pub fn solve(_: &mut crate::Context) {}
     };
     ($parse:path) => {
-        fn not_solved<T: std::fmt::Debug>(input: &T)-> String{ format!("Parse result: {:?}", input)}
-        solution!($parse, not_solved);
+        solution!($parse, crate::not_solved);
     };
     ($parse:path, $solution:path) => {
-        fn part_2_absent<T>(_: &T)->&'static str { "???"}
-        solution!($parse, $solution, part_2_absent);
+        solution!($parse, $solution, crate::part_2_absent);
     };
     ($parse:path, $part1:path, $part2:path) => {
         pub fn solve(ctx: &mut crate::Context) {
             let path = module_path!();
-            let cutoff = path.rfind("::").map(|found|found + 2).unwrap_or(0);
-            let filename = &path[cutoff..];
-            crate::solve(ctx, filename, $parse, $part1, $part2);
+            crate::solve(ctx, crate::filename_for_module(&path), |input|crate::parse_report_errors(input, $parse), $part1, $part2);
         }
     };
 }
@@ -57,7 +78,7 @@ fn solve<
     Intermediate,
     Result1: Display,
     Result2: Display,
-    Parse: FnOnce(&str) -> IResult<&str, Intermediate>,
+    Parse: FnOnce(String) -> Option<Intermediate>,
     Part1: FnOnce(&Intermediate) -> Result1,
     Part2: FnOnce(&Intermediate) -> Result2>(
     context: &mut Context,
@@ -66,12 +87,12 @@ fn solve<
     solve_part_1: Part1,
     solve_part_2: Part2,
 ) {
-    let start = Instant::now();
     let path = format!("inputfiles/{}", filename);
     let contents = fs::read_to_string(&path);
+    let start = Instant::now();
 
     if let Ok(contents) = contents {
-        if let Some(parsed) = parse_report_errors(contents, parse) {
+        if let Some(parsed) = parse(contents) {
             let after_parse = Instant::now();
             let solution_part1 = solve_part_1(&parsed);
             let after_p1 = Instant::now();

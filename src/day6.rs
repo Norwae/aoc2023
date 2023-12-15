@@ -11,22 +11,6 @@ struct Race {
     record: u64,
 }
 
-#[derive(Debug)]
-struct Input {
-    part1: Vec<Race>,
-    part2: Race
-}
-
-fn parse(input: &str) -> IResult<&str, Input> {
-    map(
-        tuple((
-        peek(parse_part_1),
-        parse_part_2
-    )), |(part1, part2)|{
-            Input { part1, part2 }
-        })(input)
-}
-
 fn parse_part_1(input: &str) -> IResult<&str, Vec<Race>> {
     map(
         tuple((
@@ -85,13 +69,14 @@ fn solve_race(race: &Race) -> u64 {
     race.time - 2 * lower - 1
 }
 
-fn part1(input: &Input) -> u64 {
-    input.part1.iter().map(solve_race).product()
+fn part1(input: &String) -> u64 {
+    let input = parse_part_1(input).expect("part1").1;
+    input.iter().map(solve_race).product()
 }
 
-fn part2(input: &Input) -> u64 {
-    solve_race(&input.part2)
+fn part2(input: &String) -> u64 {
+    solve_race(&parse_part_2(input).expect("part2").1)
 
 }
 
-solution!(parse, part1, part2);
+unparsed_solution!(part1, part2);
