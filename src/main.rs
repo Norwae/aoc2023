@@ -169,5 +169,5 @@ fn main() {
     for ptr in day_pointers {
         ptr(&mut context)
     }
-    println!("AoC so far, including io: {:?} total, {:?} without overhead. Longest day runtime was {:?} ", context.total_duration, context.non_parse_duration, context.longest.unwrap())
+    println!("AoC so far, excluding io: {:?} total, {:?} without overhead. Longest day runtime was {:?} ", context.total_duration, context.non_parse_duration, context.longest.unwrap())
 }
