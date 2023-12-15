@@ -26,45 +26,22 @@ fn filename_for_module(module: &str) -> &str {
     &module[cutoff..]
 }
 
-fn simply_parse<I>(mut f: impl FnMut(&str) -> I) -> impl FnMut(String) -> Option<I> {
-    move |input|
-        Some(f(&input))
-}
-
 macro_rules! simple_solution {
-    ($parse:path, $part1:path, $part2:path) => {
-        pub fn solve(ctx: &mut crate::Context) {
-            let path = module_path!();
-            crate::solve(ctx, crate::filename_for_module(&path), |input|Some($parse(&input)), $part1, $part2);
-        }
+    ($parse:path, $( $parts:path),*) => {
+        solution!({|input|Some($parse(&input)) }, $($parts),*);
     };
-    ($part1:path) => {
-        simple_solution!($part1, crate::part_2_absent);
-    }
 }
 
 macro_rules! nom_solution {
-    ($parse:path, $part1:path, $part2:path) => {
-        pub fn solve(ctx: &mut crate::Context) {
-            let path = module_path!();
-            crate::solve(ctx, crate::filename_for_module(&path), |input|crate::nom_parse(input, $parse), $part1, $part2);
-        }
-    };
-    ($part1:path) => {
-        simple_solution!($part1, crate::part_2_absent);
+    ($parse:path, $( $parts:path),*) => {
+        solution!({|input|crate::nom_parse(input, $parse)}, $($parts),*);
     }
 }
 
 
 macro_rules! unparsed_solution {
-    ($part1:path, $part2:path) => {
-        pub fn solve(ctx: &mut crate::Context) {
-            let path = module_path!();
-            crate::solve(ctx, crate::filename_for_module(&path), |input|Some(input), $part1, $part2);
-        }
-    };
-    ($part1:path) => {
-        unparsed_solution!($part1, crate::part_2_absent);
+    ($( $parts:path),*) => {
+        solution!({|input|Some(input)}, $($parts),*);
     }
 }
 
@@ -72,13 +49,13 @@ macro_rules! solution {
     () => {
         pub fn solve(_: &mut crate::Context) {}
     };
-    ($parse:path) => {
+    ($parse:tt) => {
         solution!($parse, crate::not_solved);
     };
-    ($parse:path, $solution:path) => {
+    ($parse:tt, $solution:path) => {
         solution!($parse, $solution, crate::part_2_absent);
     };
-    ($parse:path, $part1:path, $part2:path) => {
+    ($parse:tt, $part1:path, $part2:path) => {
         pub fn solve(ctx: &mut crate::Context) {
             let path = module_path!();
             crate::solve(ctx, crate::filename_for_module(&path), $parse, $part1, $part2);
@@ -86,7 +63,7 @@ macro_rules! solution {
     };
 }
 
-pub fn nom_parse<
+fn nom_parse<
     Parsed,
     Parser: FnMut(&str) -> IResult<&str, Parsed>
 >(input: String, mut p: Parser) -> Option<Parsed> {
