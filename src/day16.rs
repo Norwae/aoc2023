@@ -35,13 +35,13 @@ fn trace(
     start_direction: Direction,
     tiles: &Flat2DArray<Tile>,
 ) -> usize {
-    let mut tracker = tiles.mapped_by(|tile| [*tile == Outside, *tile == Outside, *tile == Outside, *tile == Outside]);
+    let mut tracker = Flat2DArray::from_data([true; 4], vec![[false; 4]; tiles.as_slice().len()], tiles.columns());
     let mut cursor_buffer = Vec::new();
     cursor_buffer.push((start, start_direction, 0usize));
 
     while let Some((mut position, mut direction, mut steps)) = cursor_buffer.pop() {
 
-        while tracker.bounds_check(position) && !tracker[position][direction as usize]{
+        while !tracker[position][direction as usize]{
             tracker[position][direction as usize] = true;
             let tile = tiles[position];
             direction = match tile {
