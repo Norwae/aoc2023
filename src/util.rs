@@ -2,9 +2,20 @@ use std::ops::{Add, Index, IndexMut};
 use geo::{Coord, CoordNum};
 use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
 
+pub struct IteratorIndex2D(usize, usize, usize);
+
 pub trait TwoDimensional {
+
     fn rows(&self) -> usize;
     fn columns(&self) -> usize;
+
+    fn indices(&self) -> IteratorIndex2D {
+        IteratorIndex2D(0, self.rows() * self.columns(), self.columns())
+    }
+
+    fn bounds_check(&self, idx: Index2D) -> bool {
+        idx.0 >= 0 && idx.1 >= 0 && idx.0 < self.columns() as i32 && idx.1 < self.rows() as i32
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -53,7 +64,7 @@ impl Add<Direction> for  Index2D {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Flat2DArray<T> {
     contents: Vec<T>,
     columns: usize,
@@ -76,6 +87,18 @@ impl<T> Flat2DArray<T> {
 
     pub fn transpose(&self) -> Transposed<T> {
         Transposed(self)
+    }
+
+    pub fn mapped_by<ToType>(&self, mut f: impl FnMut(&T) -> ToType) -> Flat2DArray<ToType> {
+        let out_of_bounds_element = f(&self.out_of_bounds_element);
+        let contents = self.contents.iter().map(f).collect();
+        let columns = self.columns;
+
+        Flat2DArray { contents, columns, out_of_bounds_element }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item=&T>{
+        self.contents.iter()
     }
 
     fn linearize_index(&self, x: i32, y: i32) -> usize {
@@ -138,5 +161,24 @@ impl <T> TwoDimensional for Transposed<'_, T> {
 
     fn columns(&self) -> usize {
         self.0.rows()
+    }
+}
+
+impl Iterator for IteratorIndex2D {
+    type Item = Index2D;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let Self(offset, limit, columns) = self;
+
+        if offset >= limit {
+            return None
+        }
+
+        let this_offset = *offset;
+        *offset += 1;
+        let row = this_offset / *columns;
+        let column = this_offset % *columns;
+
+        Some(Index2D(column as i32, row as i32))
     }
 }
