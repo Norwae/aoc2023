@@ -1,12 +1,12 @@
-use crate::util::{Direction, Flat2DArray, Index2D, TwoDimensional};
+use crate::util::{Flat2DArray, Index2D, TwoDimensional};
 
 use pathfinding::directed::astar::astar;
 use crate::day17::ForcedDirection::{EITHER, HORIZONTAL, VERTICAL};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum ForcedDirection {
-    EITHER,
     // Special case, start only
+    EITHER,
     HORIZONTAL,
     VERTICAL,
 }
@@ -230,7 +230,7 @@ fn part_1(input: &Flat2DArray<i32>) -> i32 {
         index: Index2D(0, 0),
         direction: EITHER,
     }, successor_part_1(&input),
-          |Position { index, .. }| rows - index.1 + columns - index.0,
+          |Position { index, .. }| (rows - index.1 + columns - index.0).abs(),
           |Position { index, .. }| index.0 == columns - 1 && index.1 == rows - 1,
     ).unwrap().1
 }
@@ -243,7 +243,7 @@ fn part_2(input: &Flat2DArray<i32>) -> i32 {
         index: Index2D(0, 0),
         direction: EITHER,
     }, successor_part_2(&input),
-          |Position { index, .. }| rows - index.1 + columns - index.0,
+          |Position { index, .. }| (rows - index.1 + columns - index.0).abs(),
           |Position { index, .. }| index.0 == columns - 1 && index.1 == rows - 1,
     ).unwrap().1
 }
