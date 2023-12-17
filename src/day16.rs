@@ -34,13 +34,15 @@ fn trace(
     start: Index2D,
     start_direction: Direction,
     tiles: &Flat2DArray<Tile>,
-    mut mark_visit_to_scratch: impl FnMut(Index2D, Direction, usize) -> bool,
-) {
+) -> usize {
+    let mut tracker = tiles.mapped_by(|tile| [*tile == Outside, *tile == Outside, *tile == Outside, *tile == Outside]);
     let mut cursor_buffer = Vec::new();
     cursor_buffer.push((start, start_direction, 0usize));
 
     while let Some((mut position, mut direction, mut steps)) = cursor_buffer.pop() {
-        while mark_visit_to_scratch(position, direction, steps) {
+
+        while tracker.bounds_check(position) && !tracker[position][direction as usize]{
+            tracker[position][direction as usize] = true;
             let tile = tiles[position];
             direction = match tile {
                 Empty => direction,
@@ -78,41 +80,21 @@ fn trace(
             steps += 1
         }
     }
-}
-
-fn part1(input: &Flat2DArray<Tile>) -> usize {
-    let mut tracker = input.mapped_by(|tile| [false, false, false, false]);
-
-
-    trace(
-        Index2D(0, 0),
-        Direction::EAST,
-        input,
-        |idx, d, _| {
-            if !tracker.bounds_check(idx) {
-                return false;
-            }
-
-            let flag = &mut tracker[idx][d as usize];
-            if !*flag {
-                *flag = true;
-                true
-            } else {
-                false
-            }
-        },
-    );
-
-
     tracker.iter().filter(|e| e.iter().any(|it| *it)).count()
 }
 
+fn part1(input: &Flat2DArray<Tile>) -> usize {
+    trace(
+        Index2D(0, 0),
+        Direction::EAST,
+        input
+    )
+}
+
 fn part2(input: &Flat2DArray<Tile>) -> usize {
-    let empty_tracker = input.mapped_by(|tile| [(false, 0usize), (false, 0), (false, 0), (false, 0)]);
-    let best_score = 0;
-    let best_trace = empty_tracker.clone();
     let rows = input.rows() as i32;
-    let columns = input.columns() as i32;
+    let columns  = input.columns() as i32;
+
     let starts = (0..rows).into_iter().map(|r| {
         (Index2D(0, r), Direction::EAST)
     }).chain(
@@ -126,28 +108,11 @@ fn part2(input: &Flat2DArray<Tile>) -> usize {
     );
 
     starts.map(|(start, direction)|{
-        let mut tracker = empty_tracker.clone();
-
         trace(
             start,
             direction,
-            input,
-            |idx, d, _| {
-                if !tracker.bounds_check(idx) {
-                    return false;
-                }
-
-                let flag = &mut tracker[idx][d as usize].0;
-                if !*flag {
-                    *flag = true;
-                    true
-                } else {
-                    false
-                }
-            },
-        );
-
-        tracker.iter().filter(|e| e.iter().any(|it| it.0)).count()
+            input
+        )
     }).max().unwrap()
 }
 
