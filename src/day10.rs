@@ -1,7 +1,7 @@
 use geo::{Contains, Coord, LineString, Polygon};
 
 use crate::util::{Flat2DArray, Index2D, TwoDimensional};
-pub use crate::util::Direction::{self, EAST, NORTH, SOUTH, WEST};
+use crate::util::Direction::{self, EAST, NORTH, SOUTH, WEST};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum PipeSegment {
