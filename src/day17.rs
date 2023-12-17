@@ -43,9 +43,9 @@ fn successor_part_1<'a>(arr: &'a Flat2DArray<i32>) -> impl Fn(&Position) -> [(Po
                     (Position { index: Index2D(1, 0),direction: VERTICAL}, arr[Index2D(1, 0)]),
                     (Position { index: Index2D(2, 0),direction: VERTICAL}, arr[Index2D(1, 0)] + arr[Index2D(2, 0)]),
                     (Position { index: Index2D(3, 0),direction: VERTICAL}, arr[Index2D(1, 0)] + arr[Index2D(2, 0)] + arr[Index2D(3, 0)]),
-                    (Position { index: Index2D(0, 1),direction: VERTICAL}, arr[Index2D(0, 1)]),
-                    (Position { index: Index2D(0, 2),direction: VERTICAL}, arr[Index2D(0, 1)] + arr[Index2D(0, 2)]),
-                    (Position { index: Index2D(0, 3),direction: VERTICAL}, arr[Index2D(0, 1)] + arr[Index2D(0, 2)] + arr[Index2D(0, 3)]),
+                    (Position { index: Index2D(0, 1),direction: HORIZONTAL}, arr[Index2D(0, 1)]),
+                    (Position { index: Index2D(0, 2),direction: HORIZONTAL}, arr[Index2D(0, 1)] + arr[Index2D(0, 2)]),
+                    (Position { index: Index2D(0, 3),direction: HORIZONTAL}, arr[Index2D(0, 1)] + arr[Index2D(0, 2)] + arr[Index2D(0, 3)]),
                 ],
             HORIZONTAL => {
                 let p1 = Index2D(column + 1, row);
