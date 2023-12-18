@@ -1,4 +1,4 @@
-use std::ops::{Add, Index, IndexMut};
+use std::ops::{Add, Index, IndexMut, Mul};
 use geo::{Coord, CoordNum};
 use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
 
@@ -25,6 +25,25 @@ pub enum Direction {
     WEST,
     NORTH,
 }
+
+pub struct Step(Direction, i32);
+
+impl Mul<i32> for Direction {
+    type Output = Step;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        Step(self, rhs)
+    }
+}
+
+impl Mul<Direction> for i32 {
+    type Output = Step;
+
+    fn mul(self, rhs: Direction) -> Self::Output {
+        Step(rhs, self)
+    }
+}
+
 impl Direction {
     pub(crate) const ALL: [Direction; 4] = [EAST, SOUTH, WEST, NORTH];
 
@@ -60,6 +79,19 @@ impl Add<Direction> for  Index2D {
             SOUTH => Self(self.0, self.1 + 1),
             WEST => Self(self.0 - 1, self.1),
             NORTH => Self(self.0, self.1 - 1)
+        }
+    }
+}
+
+impl Add<Step> for Index2D {
+    type Output = Index2D;
+
+    fn add(self, rhs: Step) -> Self::Output {
+        match rhs.0 {
+            EAST => Self(self.0 + rhs.1, self.1),
+            SOUTH => Self(self.0, self.1 + rhs.1),
+            WEST => Self(self.0 - rhs.1, self.1),
+            NORTH => Self(self.0, self.1 - rhs.1)
         }
     }
 }
