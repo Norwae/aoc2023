@@ -71,7 +71,7 @@ fn part1(input: &Vec<(DigInstruction, DigInstruction)>) -> f64 {
         nodes.push(cursor.into())
     }
 
-    let poly = Polygon::new(LineString(nodes.clone()), Vec::new());
+    let poly = Polygon::new(LineString(nodes), Vec::new());
 
 
     poly.signed_area() + correction as f64
@@ -93,7 +93,7 @@ fn part2(input: &Vec<(DigInstruction, DigInstruction)>) -> f64 {
     }
 
 
-    let poly = Polygon::new(LineString(nodes.clone()), Vec::new());
+    let poly = Polygon::new(LineString(nodes), Vec::new());
 
 
     poly.signed_area() + correction as f64
