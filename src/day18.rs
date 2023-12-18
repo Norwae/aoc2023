@@ -57,7 +57,9 @@ fn parse(input: &str) -> IResult<&str, Vec<(DigInstruction, DigInstruction)>> {
 fn area<'a>(it: impl Iterator<Item=&'a DigInstruction>) -> f64 {
     const DELTAS: [Coord; 4] = [Coord { x: 1., y: 0.}, Coord { x: 0., y: 1.}, Coord { x: -1., y: 0.}, Coord { x: 0., y: -1.}];
     let mut cursor = Coord { x: 0., y: 0. };
-    let mut nodes = vec![cursor];
+    let mut nodes = Vec::with_capacity(it.size_hint().0);
+    nodes.push(cursor);
+
     let mut correction = 1f64;
 
     for DigInstruction { direction, length, .. } in it {
