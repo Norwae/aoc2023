@@ -55,18 +55,19 @@ fn parse(input: &str) -> IResult<&str, Vec<(DigInstruction, DigInstruction)>> {
 }
 
 fn area<'a>(it: impl Iterator<Item=&'a DigInstruction>) -> f64 {
-    let mut cursor = Index2D(0, 0);
-    let mut nodes = vec![Coord { x: 0., y: 0. }];
-    let mut correction = 1;
+    const DELTAS: [Coord; 4] = [Coord { x: 1., y: 0.}, Coord { x: 0., y: 1.}, Coord { x: -1., y: 0.}, Coord { x: 0., y: -1.}];
+    let mut cursor = Coord { x: 0., y: 0. };
+    let mut nodes = vec![cursor];
+    let mut correction = 1f64;
 
     for DigInstruction { direction, length, .. } in it {
         let direction = *direction;
-        let length = *length;
+        let length = *length as f64;
 
         if direction == SOUTH || direction == WEST {
             correction += length
         }
-        cursor = cursor + direction * length;
+        cursor = cursor + DELTAS[direction as usize] * length;
         nodes.push(cursor.into())
     }
 
