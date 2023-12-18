@@ -54,13 +54,12 @@ fn parse(input: &str) -> IResult<&str, Vec<(DigInstruction, DigInstruction)>> {
     separated_list1(line_ending, parse_instruction)(input)
 }
 
-
-fn part1(input: &Vec<(DigInstruction, DigInstruction)>) -> f64 {
+fn area<'a>(it: impl Iterator<Item=&'a DigInstruction>) -> f64 {
     let mut cursor = Index2D(0, 0);
     let mut nodes = vec![Coord { x: 0., y: 0. }];
     let mut correction = 1;
 
-    for (DigInstruction { direction, length, .. }, _) in input {
+    for DigInstruction { direction, length, .. } in it {
         let direction = *direction;
         let length = *length;
 
@@ -77,26 +76,13 @@ fn part1(input: &Vec<(DigInstruction, DigInstruction)>) -> f64 {
     poly.signed_area() + correction as f64
 }
 
+
+fn part1(input: &Vec<(DigInstruction, DigInstruction)>) -> f64 {
+    area(input.iter().map(|(i, _)|i))
+}
+
 fn part2(input: &Vec<(DigInstruction, DigInstruction)>) -> f64 {
-    let mut cursor = Index2D(0, 0);
-    let mut nodes = vec![Coord { x: 0., y: 0. }];
-    let mut correction = 1u32;
-
-    for (_, DigInstruction { direction,length, .. }) in input {
-        let direction = *direction;
-
-        if direction == SOUTH || direction == WEST {
-            correction += *length as u32;
-        }
-        cursor = cursor + direction * *length;
-        nodes.push(cursor.into())
-    }
-
-
-    let poly = Polygon::new(LineString(nodes), Vec::new());
-
-
-    poly.signed_area() + correction as f64
+    area(input.iter().map(|(_, i)|i))
 }
 
 nom_solution!(parse, part1, part2);
