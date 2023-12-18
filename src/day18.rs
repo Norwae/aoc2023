@@ -73,8 +73,7 @@ fn area<'a>(it: impl Iterator<Item=&'a DigInstruction>) -> f64 {
 
     let poly = Polygon::new(LineString(nodes), Vec::new());
 
-
-    poly.signed_area() + correction as f64
+    poly.signed_area() + correction
 }
 
 
