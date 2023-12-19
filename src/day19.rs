@@ -183,10 +183,12 @@ fn parse_rule_into<'a>(target: &'a mut HashMap<String, Rule>) -> impl FnMut(&str
             parse_decision,
             tag("}")
         )), |(label, _, conditionals, _, default, _)| {
-            target.insert(label.to_string(), Rule {
+            let mut rule = Rule {
                 conditionals,
                 default,
-            });
+            };
+            rule.simplify();
+            target.insert(label.to_string(), rule);
         })(input)
     }
 }
