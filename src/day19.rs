@@ -1,6 +1,5 @@
 use std::collections::{HashMap, VecDeque};
-use std::hash::Hash;
-use std::mem::swap;
+
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, line_ending, u32};
@@ -68,6 +67,7 @@ struct Rule {
     conditionals: Vec<Condition>,
     default: Decision,
 }
+
 #[derive(Debug, Clone)]
 struct InputRange {
     from_x: u32,
@@ -97,7 +97,6 @@ impl Default for InputRange {
 
 
 impl InputRange {
-
     fn len(&self) -> usize {
         let mut product = 0usize;
         if !self.is_empty() {
@@ -162,50 +161,33 @@ impl InputRange {
     }
 }
 
-
-impl Rule {
-    fn simplify(&mut self) {
-        let mut tmp = Vec::new();
-        swap(&mut self.conditionals, &mut tmp);
-
-        let rules_to_evaluate = tmp.into_iter()
-            .rev()
-            .skip_while(|it| it.destination == self.default);
-
-        self.conditionals.extend(rules_to_evaluate);
-        self.conditionals.reverse();
-
-        // todo filter redundant rules
-    }
-}
-
 #[derive(Debug, Clone)]
 struct Input {
     ruleset: HashMap<String, Rule>,
-    parts: Vec<Part>
+    parts: Vec<Part>,
 }
 
-impl Input {
-    fn apply_rule<'a, 'input>(&'a self, label: &'a str, input: &'input Part) -> &'a Decision {
-        let rule = &self.ruleset[label];
-
-        for c in &rule.conditionals {
+impl Rule {
+    fn apply(&self, input: &Part) -> &Decision {
+        for c in &self.conditionals {
             if c.applies_to(input) {
-                return &c.destination
+                return &c.destination;
             }
         }
 
-        &rule.default
+        &self.default
     }
+}
 
-    fn run_to_terminal<'a>(&'a self, input: &Part) -> bool {
-        let mut rule_label: &'a str = "in";
+impl Input {
+    fn run_to_terminal(&self, input: &Part) -> bool {
+        let mut rule = &self.ruleset["in"];
 
         loop {
-            match self.apply_rule(rule_label, input) {
+            match rule.apply(input) {
                 Decision::Accept => return true,
                 Decision::Reject => return false,
-                Decision::Forward(next) => rule_label = next,
+                Decision::Forward(next) => rule = &self.ruleset[next],
             }
         }
     }
@@ -222,7 +204,7 @@ impl Input {
                         Decision::Accept => acceptor(_then),
                         Decision::Reject => (),
                         Decision::Forward(label) => {
-                           queue.push_back((label, _then))
+                            queue.push_back((label, _then))
                         }
                     }
                 }
@@ -287,11 +269,10 @@ fn parse_rule_into<'a>(target: &'a mut HashMap<String, Rule>) -> impl FnMut(&str
             parse_decision,
             tag("}")
         )), |(label, _, conditionals, _, default, _)| {
-            let mut rule = Rule {
+            let rule = Rule {
                 conditionals,
                 default,
             };
-            rule.simplify();
             target.insert(label.to_string(), rule);
         })(input)
     }
@@ -339,7 +320,7 @@ fn part1(input: &Input) -> u32 {
 
 fn part2(input: &Input) -> usize {
     let mut sum = 0;
-    input.apply_input_range_to(InputRange::default(), "in", |r|{
+    input.apply_input_range_to(InputRange::default(), "in", |r| {
         sum += r.len();
     });
 

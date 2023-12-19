@@ -125,14 +125,6 @@ impl<T> Flat2DArray<T> {
         Transposed(self)
     }
 
-    pub fn mapped_by<ToType>(&self, mut f: impl FnMut(&T) -> ToType) -> Flat2DArray<ToType> {
-        let out_of_bounds_element = f(&self.out_of_bounds_element);
-        let contents = self.contents.iter().map(f).collect();
-        let columns = self.columns;
-
-        Flat2DArray { contents, columns, out_of_bounds_element }
-    }
-
     pub fn iter(&self) -> impl Iterator<Item=&T>{
         self.contents.iter()
     }
