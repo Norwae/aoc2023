@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::mem::swap;
+use std::ops::RangeInclusive;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, line_ending, u32};
@@ -32,11 +34,21 @@ enum ConditionRef {
 }
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 enum Decision {
     Accept,
     Reject,
     Forward(String),
+}
+
+impl Decision {
+    fn is_terminal(&self) -> bool {
+        match self {
+            Decision::Accept => true,
+            Decision::Reject => true,
+            Forward(_) => false
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -58,7 +70,7 @@ impl Condition {
 
         match self.op {
             ConditionOp::LT => *field < self.value,
-            ConditionOp::GT => *field > self.value
+            ConditionOp::GT => *field > self.value,
         }
     }
 }
@@ -67,6 +79,26 @@ impl Condition {
 struct Rule {
     conditionals: Vec<Condition>,
     default: Decision,
+}
+
+impl Rule {
+    fn is_terminal(&self) -> bool {
+        self.default.is_terminal() && self.conditionals.iter().all(|c|c.destination.is_terminal())
+    }
+
+    fn simplify(&mut self) {
+        let mut tmp = Vec::new();
+        swap(&mut self.conditionals, &mut tmp);
+
+        let rules_to_evaluate = tmp.into_iter()
+            .rev()
+            .skip_while(|it| it.destination == self.default);
+
+        self.conditionals.extend(rules_to_evaluate);
+        self.conditionals.reverse();
+
+        // todo filter redundant rules
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -98,6 +130,10 @@ impl Input {
                 Forward(next) => rule_label = next,
             }
         }
+    }
+
+    fn find_terminal_rule(&self) -> Option<(&String, &Rule)> {
+        self.ruleset.iter().find(|(_, r)| r.is_terminal())
     }
 }
 
@@ -195,4 +231,13 @@ fn part1(input: &Input) -> u32 {
     sum
 }
 
-nom_solution!(parse, part1);
+fn part2(input: &Input) -> u32 {
+    let mut clone = input.find_terminal_rule().unwrap().1.clone();
+    dbg!(&clone);
+    clone.simplify();
+    dbg!(&clone);
+
+    42
+}
+
+nom_solution!(parse, part1, part2);
