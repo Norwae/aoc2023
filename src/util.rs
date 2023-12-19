@@ -2,16 +2,10 @@ use std::ops::{Add, Index, IndexMut, Mul};
 use geo::{Coord, CoordNum};
 use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
 
-pub struct IteratorIndex2D(usize, usize, usize);
-
 pub trait TwoDimensional {
 
     fn rows(&self) -> usize;
     fn columns(&self) -> usize;
-
-    fn indices(&self) -> IteratorIndex2D {
-        IteratorIndex2D(0, self.rows() * self.columns(), self.columns())
-    }
 
     fn bounds_check(&self, idx: Index2D) -> bool {
         idx.0 >= 0 && idx.1 >= 0 && idx.0 < self.columns() as i32 && idx.1 < self.rows() as i32
@@ -45,9 +39,9 @@ impl Mul<Direction> for i32 {
 }
 
 impl Direction {
-    pub(crate) const ALL: [Direction; 4] = [EAST, SOUTH, WEST, NORTH];
+    pub const ALL: [Direction; 4] = [EAST, SOUTH, WEST, NORTH];
 
-    pub(crate) fn opposite(self) -> Self {
+    pub fn opposite(self) -> Self {
         match self {
             EAST => WEST,
             SOUTH => NORTH,
@@ -115,18 +109,8 @@ impl<T> Flat2DArray<T> {
         &self.contents
     }
 
-    fn range_check(&self, x: i32, y: i32) -> bool {
-        let cols = self.columns as i32;
-        let len = self.contents.len() as i32;
-        (0..cols).contains(&x) && (0..len / cols).contains(&y)
-    }
-
     pub fn transpose(&self) -> Transposed<T> {
         Transposed(self)
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item=&T>{
-        self.contents.iter()
     }
 
     fn linearize_index(&self, x: i32, y: i32) -> usize {
@@ -148,8 +132,8 @@ impl<T> Index<Index2D> for Flat2DArray<T> {
     type Output = T;
 
     fn index(&self, index: Index2D) -> &Self::Output {
-        let Index2D(x, y) = index;
-        if self.range_check(x, y) {
+        if self.bounds_check(index) {
+            let Index2D(x, y) = index;
             &self.contents[self.linearize_index(x, y)]
         } else {
             &self.out_of_bounds_element
@@ -159,11 +143,9 @@ impl<T> Index<Index2D> for Flat2DArray<T> {
 
 impl<T> IndexMut<Index2D> for Flat2DArray<T> {
     fn index_mut(&mut self, index: Index2D) -> &mut Self::Output {
+        assert!(self.bounds_check(index), "Out of range index in mutable operation: {:?}", index);
         let Index2D(x, y) = index;
 
-        if !self.range_check(x, y) {
-            panic!("Out of range index in mutable operation: {:?}", index)
-        }
 
         let linear = self.linearize_index(x, y);
         &mut self.contents[linear]
@@ -189,24 +171,5 @@ impl <T> TwoDimensional for Transposed<'_, T> {
 
     fn columns(&self) -> usize {
         self.0.rows()
-    }
-}
-
-impl Iterator for IteratorIndex2D {
-    type Item = Index2D;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let Self(offset, limit, columns) = self;
-
-        if offset >= limit {
-            return None
-        }
-
-        let this_offset = *offset;
-        *offset += 1;
-        let row = this_offset / *columns;
-        let column = this_offset % *columns;
-
-        Some(Index2D(column as i32, row as i32))
     }
 }

@@ -40,8 +40,7 @@ fn trace(
     cursor_buffer.push((start, start_direction, 0usize));
 
     while let Some((mut position, mut direction, mut steps)) = cursor_buffer.pop() {
-
-        while !tracker[position][direction as usize]{
+        while !tracker[position][direction as usize] {
             tracker[position][direction as usize] = true;
             let tile = tiles[position];
             direction = match tile {
@@ -80,20 +79,20 @@ fn trace(
             steps += 1
         }
     }
-    tracker.iter().filter(|e| e.iter().any(|it| *it)).count()
+    tracker.as_slice().iter().filter(|e| e.iter().any(|it| *it)).count()
 }
 
 fn part1(input: &Flat2DArray<Tile>) -> usize {
     trace(
         Index2D(0, 0),
         Direction::EAST,
-        input
+        input,
     )
 }
 
 fn part2(input: &Flat2DArray<Tile>) -> usize {
     let rows = input.rows() as i32;
-    let columns  = input.columns() as i32;
+    let columns = input.columns() as i32;
 
     let starts = (0..rows).into_iter().map(|r| {
         (Index2D(0, r), Direction::EAST)
@@ -107,11 +106,11 @@ fn part2(input: &Flat2DArray<Tile>) -> usize {
         (0..columns).into_iter().map(|c| (Index2D(c, rows - 1), Direction::NORTH))
     );
 
-    starts.map(|(start, direction)|{
+    starts.map(|(start, direction)| {
         trace(
             start,
             direction,
-            input
+            input,
         )
     }).max().unwrap()
 }
