@@ -27,12 +27,18 @@ fn filename_for_module(module: &str) -> &str {
 }
 
 macro_rules! simple_solution {
+    ($parse:path) => {
+        simple_solution!($parse, crate::not_solved);
+    };
     ($parse:path, $( $parts:path),*) => {
         solution!({|input|Some($parse(&input)) }, $($parts),*);
     };
 }
 
 macro_rules! nom_solution {
+    ($parse:path) => {
+        nom_solution!($parse, crate::not_solved);
+    };
     ($parse:path, $( $parts:path),*) => {
         solution!({|input|crate::nom_parse(input, $parse)}, $($parts),*);
     }

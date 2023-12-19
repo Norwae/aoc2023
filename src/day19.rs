@@ -112,7 +112,7 @@ impl InputRange {
         self.from_x >= self.to_x || self.from_m >= self.to_m || self.from_a >= self.to_a || self.from_s >= self.to_s
     }
 
-    fn split_for_condition(&self, c: &Condition) -> (InputRange, InputRange) {
+    fn split_for_condition(self, c: &Condition) -> (InputRange, InputRange) {
         let mut _then = self.clone();
         let mut _else = self.clone();
 
