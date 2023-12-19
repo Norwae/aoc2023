@@ -195,7 +195,7 @@ impl Input {
     fn apply_input_range_to<'a>(&'a self, range: InputRange, label: &'a str, mut acceptor: impl FnMut(InputRange)) {
         let mut queue = VecDeque::from([(label, range)]);
 
-        while let Some((label, mut range)) = queue.pop_front() {
+        'main: while let Some((label, mut range)) = queue.pop_front() {
             let rule = &self.ruleset[label];
             for condition in &rule.conditionals {
                 let (_then, _else) = range.split_for_condition(condition);
@@ -209,8 +209,12 @@ impl Input {
                     }
                 }
 
+                if _else.is_empty() {
+                    continue 'main;
+                }
                 range = _else
             }
+
 
             match &rule.default {
                 Decision::Accept => acceptor(range),
