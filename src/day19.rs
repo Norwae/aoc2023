@@ -208,10 +208,6 @@ impl Input {
                         }
                     }
                 }
-
-                if _else.is_empty() {
-                    continue 'main;
-                }
                 range = _else
             }
 
