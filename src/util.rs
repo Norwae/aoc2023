@@ -1,9 +1,35 @@
+use std::fmt::{Debug, Formatter};
 use std::ops::{Add, Index, IndexMut, Mul};
 use geo::{Coord, CoordNum};
 use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
 
-pub trait TwoDimensional {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct FixedLengthAsciiString<const n: usize> {
+    storage: [u8; n],
+}
 
+impl <const n: usize> PartialEq<str> for FixedLengthAsciiString<n> {
+    fn eq(&self, other: &str) -> bool {
+        other.as_bytes() == &self.storage[..]
+    }
+}
+
+impl <const n: usize> Debug for FixedLengthAsciiString<n> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(String::from_utf8_lossy(&self.storage[..]).as_ref())
+    }
+}
+
+impl<const n: usize> FixedLengthAsciiString<n> {
+    pub fn new(input: &str) -> Self {
+        assert!(input.len() <= n);
+        let mut storage = [b' '; n];
+        storage[..input.len()].copy_from_slice(input.as_bytes());
+        Self { storage }
+    }
+}
+
+pub trait TwoDimensional {
     fn rows(&self) -> usize;
     fn columns(&self) -> usize;
 
@@ -55,16 +81,16 @@ impl Direction {
 pub struct Index2D(pub i32, pub i32);
 
 
-impl <T: CoordNum + From<i32>> Into<Coord<T>> for Index2D {
+impl<T: CoordNum + From<i32>> Into<Coord<T>> for Index2D {
     fn into(self) -> Coord<T> {
         Coord {
             x: self.0.into(),
-            y: self.1.into()
+            y: self.1.into(),
         }
     }
 }
 
-impl Add<Direction> for  Index2D {
+impl Add<Direction> for Index2D {
     type Output = Index2D;
 
     fn add(self, rhs: Direction) -> Self::Output {
@@ -118,7 +144,7 @@ impl<T> Flat2DArray<T> {
     }
 }
 
-impl <T> TwoDimensional for Flat2DArray<T> {
+impl<T> TwoDimensional for Flat2DArray<T> {
     fn rows(&self) -> usize {
         self.contents.len() / self.columns
     }
@@ -154,7 +180,7 @@ impl<T> IndexMut<Index2D> for Flat2DArray<T> {
 
 pub struct Transposed<'a, T>(&'a Flat2DArray<T>);
 
-impl <T> Index<Index2D> for Transposed<'_, T> {
+impl<T> Index<Index2D> for Transposed<'_, T> {
     type Output = T;
 
     fn index(&self, index: Index2D) -> &Self::Output {
@@ -164,7 +190,7 @@ impl <T> Index<Index2D> for Transposed<'_, T> {
     }
 }
 
-impl <T> TwoDimensional for Transposed<'_, T> {
+impl<T> TwoDimensional for Transposed<'_, T> {
     fn rows(&self) -> usize {
         self.0.columns
     }

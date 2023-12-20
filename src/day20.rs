@@ -7,6 +7,7 @@ use nom::IResult;
 use nom::multi::{separated_list0, separated_list1};
 use nom::sequence::tuple;
 use crate::day20::Module::{Broadcaster, Conjunction, FlipFlop};
+use crate::util::FixedLengthAsciiString;
 
 #[derive(Debug, Clone)]
 enum Module {
@@ -22,15 +23,15 @@ enum Module {
 
 #[derive(Debug, Clone)]
 struct WiredModule {
-    label: String,
+    label: FixedLengthAsciiString<2>,
     module: Module,
     wires: Vec<Wire>,
 }
 
 #[derive(Debug)]
 struct Pulse {
-    emitter: String,
-    receiver: String,
+    emitter: FixedLengthAsciiString<2>,
+    receiver: FixedLengthAsciiString<2>,
     to_slot: usize,
     high: bool
 }
@@ -80,19 +81,22 @@ impl WiredModule {
 
 #[derive(Debug, Clone)]
 struct Wire {
-    to: String,
+    to: FixedLengthAsciiString<2>,
     inbound_index: usize,
 }
 
 #[derive(Debug, Clone)]
 struct Input {
-    modules: HashMap<String, WiredModule>,
+    modules: HashMap<FixedLengthAsciiString<2>, WiredModule>,
 }
+
+const BUTTON_LABEL: &'static str = "!!";
+const BROADCASTER_LABEL: &'static str = ">>";
 
 impl Input {
 
         fn push_button(&mut self, mut on_pulse: impl FnMut(&Pulse)) {
-            let mut queue = VecDeque::from([Pulse { emitter: "button".to_string(), receiver: "broadcaster".to_string(), to_slot: 0, high: false }]);
+            let mut queue = VecDeque::from([Pulse { emitter: FixedLengthAsciiString::new(BUTTON_LABEL), receiver: FixedLengthAsciiString::new(BROADCASTER_LABEL), to_slot: 0, high: false }]);
 
             while let Some(next) = queue.pop_front() {
                 on_pulse(&next);
@@ -105,7 +109,7 @@ impl Input {
 }
 
 fn parse_broadcaster(input: &str) -> IResult<&str, (Module, &str)> {
-    value((Module::Broadcaster, "broadcaster"), tag("broadcaster"))(input)
+    value((Broadcaster, BROADCASTER_LABEL), tag("broadcaster"))(input)
 }
 
 fn parse_flip_flop(input: &str) -> IResult<&str, (Module, &str)> {
@@ -146,27 +150,30 @@ fn parse_and_reformat(input: &str) -> IResult<&str, Input> {
         let mut inbound_count = HashMap::new();
 
         for (label, module, outputs) in wirings {
+            let label = FixedLengthAsciiString::new(label);
             let mut module = WiredModule {
                 module,
-                label: label.to_string(),
+                label: label.clone(),
                 wires: Vec::with_capacity(outputs.len()),
             };
 
             for output in outputs {
-                let inbound_index = inbound_count.entry(output).or_insert(0usize);
+
+                let output = FixedLengthAsciiString::new(output);
+                let inbound_index = inbound_count.entry(output.clone()).or_insert(0usize);
                 module.wires.push(Wire {
-                    to: output.to_string(),
+                    to: output,
                     inbound_index: *inbound_index,
                 });
                 *inbound_index += 1
             }
 
-            modules.insert(label.to_string(), module);
+            modules.insert(label, module);
         }
 
         for (key, module) in &mut modules {
             if let Conjunction { latest_inputs} = &mut module.module {
-                *latest_inputs = vec![false; inbound_count[&key[..]]]
+                *latest_inputs = vec![false; inbound_count[&key]]
             }
         }
 
