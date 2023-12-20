@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take};
 use nom::character::complete::{alpha1, line_ending};
 use nom::combinator::{map, value};
 use nom::IResult;
-use nom::multi::separated_list1;
+use nom::multi::{separated_list0, separated_list1};
 use nom::sequence::tuple;
 use crate::day20::Module::{Conjunction, FlipFlop};
 
@@ -16,33 +16,102 @@ enum Module {
     },
     Conjunction {
         latest_inputs: Vec<bool>,
-        input_received: Vec<bool>,
     },
 }
 
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 struct PlannedWiring<'a> {
     label: &'a str,
     module: Module,
     outputs: Vec<&'a str>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct WiredModule {
     module: Module,
     wires: Vec<Wire>,
 }
 
-#[derive(Debug)]
+impl WiredModule {
+
+    fn process_pulse(&mut self, pulse: Pulse, emitted_target: &mut VecDeque<Pulse>) {
+        let Pulse { high, input_port, ..} = pulse;
+        match &mut self.module {
+            Module::Broadcaster => {
+                for wire in self.wires.iter_mut() {
+                    emitted_target.push_back(Pulse {
+                        to_module: wire.to,
+                        input_port: wire.inbound_index,
+                        high,
+                    })
+                }
+            }
+            FlipFlop { memory } => {
+                if !high {
+                    *memory = !*memory;
+                    for wire in self.wires.iter_mut() {
+                        emitted_target.push_back(Pulse {
+                            to_module: wire.to,
+                            input_port: wire.inbound_index,
+                            high: *memory,
+                        })
+                    }
+                }
+            }
+            Conjunction { latest_inputs } => {
+                latest_inputs[input_port] = high;
+                let all_high = latest_inputs.iter().all(|v|*v);
+
+                for wire in self.wires.iter_mut() {
+                    emitted_target.push_back(Pulse {
+                        to_module: wire.to,
+                        input_port: wire.inbound_index,
+                        high: !all_high,
+                    })
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 struct Wire {
     to: usize,
     inbound_index: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Input {
     broadcaster_index: usize,
     modules: Vec<WiredModule>,
+}
+
+impl Input {
+    fn push_button(&mut self) -> (usize, usize) {
+        let mut low = 0;
+        let mut high = 0;
+        let mut queue = VecDeque::from([Pulse { to_module: self.broadcaster_index, input_port: 0usize, high: false }]);
+
+        while let Some(next) = queue.pop_back() {
+            if next.high {
+                high += 1;
+            } else {
+                low += 1;
+            }
+            let wired_module = &mut self.modules[next.to_module];
+            wired_module.process_pulse(next, &mut queue);
+        }
+
+        (low, high)
+    }
+}
+
+#[derive(Debug)]
+struct Pulse {
+    to_module: usize,
+    input_port: usize,
+    high: bool
 }
 
 fn parse_broadcaster(input: &str) -> IResult<&str, (Module, &str)> {
@@ -60,7 +129,7 @@ fn parse_conjunction(input: &str) -> IResult<&str, (Module, &str)> {
     map(tuple((
         tag("&"),
         alpha1
-    )), |(_, label)| (Conjunction { latest_inputs: Vec::new(), input_received: Vec::new() }, label))(input)
+    )), |(_, label)| (Conjunction { latest_inputs: Vec::new() }, label))(input)
 }
 
 fn parse_module(input: &str) -> IResult<&str, (Module, &str)> {
@@ -75,7 +144,7 @@ fn parse_planned_wiring(input: &str) -> IResult<&str, PlannedWiring> {
     map(tuple((
         parse_module,
         tag(" -> "),
-        separated_list1(tag(", "), alpha1)
+        separated_list0(tag(", "), alpha1)
     )), |((module, label), _, outputs)| {
         PlannedWiring { label, module, outputs }
     })(input)
@@ -102,14 +171,19 @@ fn parse_and_reformat(input: &str) -> IResult<&str, Input> {
         let mut inbound_count = vec![0; wirings.len()];
         let broadcaster_index = index_assignment["broadcaster"];
         let mut modules: Vec<_> = wirings.into_iter().map(|wiring| {
-            let wires = wiring.outputs.into_iter().map(|target_label| {
+            let wires = wiring.outputs.into_iter().filter_map(|target_label| {
                 let to = index_assignment[target_label];
-                let index_count_ptr = &mut inbound_count[to];
-                let inbound_index = *index_count_ptr;
-                *index_count_ptr += 1;
-                Wire {
-                    to,
-                    inbound_index,
+                if to >= inbound_count.len() {
+                    eprintln!("Undefined module named {} found, ignoring wire", target_label);
+                    None
+                } else {
+                    let index_count_ptr = &mut inbound_count[to];
+                    let inbound_index = *index_count_ptr;
+                    *index_count_ptr += 1;
+                    Some(Wire {
+                        to,
+                        inbound_index,
+                    })
                 }
             }).collect();
             WiredModule {
@@ -119,8 +193,7 @@ fn parse_and_reformat(input: &str) -> IResult<&str, Input> {
         }).collect();
 
         for (i, module) in modules.iter_mut().enumerate() {
-            if let Conjunction { input_received, latest_inputs } = &mut module.module {
-                *input_received = vec![false; inbound_count[i]];
+            if let Conjunction { latest_inputs } = &mut module.module {
                 *latest_inputs = vec![false; inbound_count[i]];
             }
         }
@@ -132,4 +205,13 @@ fn parse_and_reformat(input: &str) -> IResult<&str, Input> {
     })(input)
 }
 
-nom_solution!(parse_and_reformat);
+fn part_1(input: &Input) -> usize {
+    let mut input = input.clone();
+    let (l, r) = (0..1000).map(|_|input.push_button()).fold((0usize, 0usize), |(l0, r0), (l1, r1)| {
+        (l0 + l1, r0 + r1)
+    });
+
+    l * r
+}
+
+nom_solution!(parse_and_reformat, part_1);
