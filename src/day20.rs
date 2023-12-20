@@ -1,4 +1,5 @@
 use std::collections::{HashMap, VecDeque};
+use std::mem::swap;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take};
 use nom::character::complete::{alpha1, line_ending};
@@ -20,7 +21,6 @@ enum Module {
     },
 }
 
-
 #[derive(Debug, Clone)]
 struct WiredModule {
     label: FixedLengthAsciiString<2>,
@@ -31,81 +31,81 @@ struct WiredModule {
 #[derive(Debug)]
 struct Pulse {
     emitter: FixedLengthAsciiString<2>,
-    receiver: FixedLengthAsciiString<2>,
+    receiver: usize,
     to_slot: usize,
-    high: bool
+    high: bool,
 }
 
 impl WiredModule {
-        fn process_pulse(&mut self, high: bool, to_slot: usize, mut enqueue: impl FnMut(Pulse)) {
-            match &mut self.module {
-                Broadcaster => {
-                    for wire in self.wires.iter_mut() {
+    fn process_pulse(&mut self, high: bool, to_slot: usize, mut enqueue: impl FnMut(Pulse)) {
+        match &mut self.module {
+            Broadcaster => {
+                for Wire { to, inbound_index } in self.wires.iter() {
+                    enqueue(Pulse {
+                        emitter: self.label.clone(),
+                        receiver: *to,
+                        to_slot: *inbound_index,
+                        high,
+                    })
+                }
+            }
+            FlipFlop { memory } => {
+                if !high {
+                    *memory = !*memory;
+                    for Wire { to, inbound_index } in self.wires.iter() {
                         enqueue(Pulse {
                             emitter: self.label.clone(),
-                            receiver: wire.to.clone(),
-                            to_slot: wire.inbound_index,
-                            high
-                        })
-                    }
-                }
-                FlipFlop { memory } => {
-                    if !high {
-                        *memory = !*memory;
-                        for wire in self.wires.iter_mut() {
-                            enqueue(Pulse {
-                                emitter: self.label.clone(),
-                                receiver: wire.to.clone(),
-                                to_slot: wire.inbound_index,
-                                high: *memory,
-                            })
-                        }
-                    }
-                }
-                Conjunction { latest_inputs } => {
-                    latest_inputs[to_slot] = high;
-                    let all_high = latest_inputs.iter().all(|v|*v);
-
-                    for wire in self.wires.iter_mut() {
-                        enqueue(Pulse {
-                            emitter: self.label.clone(),
-                            receiver: wire.to.clone(),
-                            to_slot: wire.inbound_index,
-                            high: !all_high,
+                            receiver: *to,
+                            to_slot: *inbound_index,
+                            high: *memory,
                         })
                     }
                 }
             }
+            Conjunction { latest_inputs } => {
+                latest_inputs[to_slot] = high;
+                let all_high = latest_inputs.iter().all(|v| *v);
+
+                for Wire { to, inbound_index } in self.wires.iter() {
+                    enqueue(Pulse {
+                        emitter: self.label.clone(),
+                        receiver: *to,
+                        to_slot: *inbound_index,
+                        high: !all_high,
+                    })
+                }
+            }
         }
+    }
 }
 
 #[derive(Debug, Clone)]
 struct Wire {
-    to: FixedLengthAsciiString<2>,
+    to: usize,
     inbound_index: usize,
 }
 
 #[derive(Debug, Clone)]
 struct Input {
-    modules: HashMap<FixedLengthAsciiString<2>, WiredModule>,
+    broadcaster_index: usize,
+    modules: Vec<WiredModule>,
 }
 
 const BUTTON_LABEL: &'static str = "!!";
 const BROADCASTER_LABEL: &'static str = ">>";
 
 impl Input {
+    fn push_button(&mut self, mut on_pulse: impl FnMut(&Pulse)) {
+        let mut queue = VecDeque::from([Pulse { emitter: FixedLengthAsciiString::new(BUTTON_LABEL), receiver: self.broadcaster_index, to_slot: 0, high: false }]);
 
-        fn push_button(&mut self, mut on_pulse: impl FnMut(&Pulse)) {
-            let mut queue = VecDeque::from([Pulse { emitter: FixedLengthAsciiString::new(BUTTON_LABEL), receiver: FixedLengthAsciiString::new(BROADCASTER_LABEL), to_slot: 0, high: false }]);
-
-            while let Some(next) = queue.pop_front() {
-                on_pulse(&next);
-                let handling_module = self.modules.get_mut(&next.receiver);
-                if let Some(wm) = handling_module  {
-                    wm.process_pulse(next.high, next.to_slot, |p| queue.push_back(p))
-                }
+        while let Some(next) = queue.pop_front() {
+            on_pulse(&next);
+            let handling_module = self.modules.get_mut(next.receiver);
+            if let Some(wm) = handling_module {
+                wm.process_pulse(next.high, next.to_slot, |p| queue.push_back(p))
             }
         }
+    }
 }
 
 fn parse_broadcaster(input: &str) -> IResult<&str, (Module, &str)> {
@@ -145,49 +145,64 @@ fn parse_wired(input: &str) -> IResult<&str, (&str, Module, Vec<&str>)> {
 }
 
 fn parse_and_reformat(input: &str) -> IResult<&str, Input> {
-    map(separated_list1(line_ending, parse_wired), |wirings| {
-        let mut modules = HashMap::new();
-        let mut inbound_count = HashMap::new();
+    map(separated_list1(line_ending, parse_wired), |mut wirings| {
+        let mut module_indices = HashMap::with_capacity(wirings.len());
+        let mut modules = Vec::with_capacity(wirings.len());
+        let mut inbound_count = HashMap::with_capacity(wirings.len());
 
-        for (label, module, outputs) in wirings {
+        for (label, module, wires) in &mut wirings {
             let label = FixedLengthAsciiString::new(label);
-            let mut module = WiredModule {
-                module,
-                label: label.clone(),
-                wires: Vec::with_capacity(outputs.len()),
+            module_indices.insert(label.clone(), modules.len());
+            let mut wired = WiredModule {
+                label,
+                module: Broadcaster,
+                wires: Vec::with_capacity(wires.len()),
             };
 
-            for output in outputs {
+            swap(&mut wired.module, module);
+            modules.push(wired)
+        }
 
+        for (n, (label, _, outputs)) in wirings.into_iter().enumerate() {
+            let wired = &mut modules[n];
+
+            for output in outputs {
                 let output = FixedLengthAsciiString::new(output);
                 let inbound_index = inbound_count.entry(output.clone()).or_insert(0usize);
-                module.wires.push(Wire {
-                    to: output,
-                    inbound_index: *inbound_index,
-                });
-                *inbound_index += 1
-            }
+                let outbound = module_indices.get(&output);
 
-            modules.insert(label, module);
-        }
-
-        for (key, module) in &mut modules {
-            if let Conjunction { latest_inputs} = &mut module.module {
-                *latest_inputs = vec![false; inbound_count[&key]]
+                if let Some(to) = outbound {
+                    wired.wires.push(Wire {
+                        to: *to,
+                        inbound_index: *inbound_index,
+                    });
+                    *inbound_index += 1
+                }
             }
         }
 
-        Input { modules }
+        let mut broadcaster_index = usize::MAX;
+
+        for (n, module) in modules.iter_mut().enumerate() {
+            match &mut module.module {
+                Conjunction { latest_inputs } =>
+                    *latest_inputs = vec![false; inbound_count[&module.label]],
+                Broadcaster => broadcaster_index = n,
+                _ => ()
+            }
+        }
+
+        Input { modules, broadcaster_index }
     })(input)
 }
 
 fn part_1(input: &Input) -> usize {
-    let mut low_count =0;
+    let mut low_count = 0;
     let mut high_count = 0;
     let mut input = input.clone();
 
     for _ in 0..1000 {
-        input.push_button(|Pulse{ high, ..}|{
+        input.push_button(|Pulse { high, .. }| {
             if *high {
                 high_count += 1
             } else {
@@ -219,9 +234,9 @@ fn part_2(input: &Input) -> usize {
     let mut rv_cycle: Option<usize> = None;
     let mut dl_cycle: Option<usize> = None;
 
-    while  bt_cycle.is_none() || fr_cycle.is_none() || rv_cycle.is_none() || dl_cycle.is_none() {
+    while bt_cycle.is_none() || fr_cycle.is_none() || rv_cycle.is_none() || dl_cycle.is_none() {
         pushes += 1;
-        input.push_button(|Pulse{high, emitter, ..}|{
+        input.push_button(|Pulse { high, emitter, .. }| {
             if *high {
                 if emitter == "bt" {
                     bt_cycle.get_or_insert(pushes);
