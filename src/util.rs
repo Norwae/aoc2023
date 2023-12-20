@@ -4,26 +4,25 @@ use geo::{Coord, CoordNum};
 use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
 
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct FixedLengthAsciiString<const n: usize> {
-    storage: [u8; n],
+pub struct FixedLengthAsciiString<const N: usize> {
+    storage: [u8; N],
 }
 
-impl <const n: usize> PartialEq<str> for FixedLengthAsciiString<n> {
+impl <const N: usize> PartialEq<str> for FixedLengthAsciiString<N> {
     fn eq(&self, other: &str) -> bool {
         other.as_bytes() == &self.storage[..]
     }
 }
-
-impl <const n: usize> Debug for FixedLengthAsciiString<n> {
+impl <const N: usize> Debug for FixedLengthAsciiString<N> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.write_str(String::from_utf8_lossy(&self.storage[..]).as_ref())
     }
 }
 
-impl<const n: usize> FixedLengthAsciiString<n> {
+impl<const N: usize> FixedLengthAsciiString<N> {
     pub fn new(input: &str) -> Self {
-        assert!(input.len() <= n);
-        let mut storage = [b' '; n];
+        assert!(input.len() <= N);
+        let mut storage = [b' '; N];
         storage[..input.len()].copy_from_slice(input.as_bytes());
         Self { storage }
     }

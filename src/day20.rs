@@ -1,12 +1,14 @@
 use std::collections::{HashMap, VecDeque};
 use std::mem::swap;
+
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take};
+use nom::bytes::complete::tag;
 use nom::character::complete::{alpha1, line_ending};
 use nom::combinator::{map, value};
 use nom::IResult;
 use nom::multi::{separated_list0, separated_list1};
 use nom::sequence::tuple;
+
 use crate::day20::Module::{Broadcaster, Conjunction, FlipFlop};
 use crate::util::FixedLengthAsciiString;
 
@@ -94,6 +96,8 @@ struct Input {
 const BUTTON_LABEL: &'static str = "!!";
 const BROADCASTER_LABEL: &'static str = ">>";
 
+const OUTSIDE_INDEX: usize = usize::MAX - 1;
+
 impl Input {
     fn push_button(&mut self, mut on_pulse: impl FnMut(&Pulse)) {
         let mut queue = VecDeque::from([Pulse { emitter: FixedLengthAsciiString::new(BUTTON_LABEL), receiver: self.broadcaster_index, to_slot: 0, high: false }]);
@@ -163,21 +167,19 @@ fn parse_and_reformat(input: &str) -> IResult<&str, Input> {
             modules.push(wired)
         }
 
-        for (n, (label, _, outputs)) in wirings.into_iter().enumerate() {
+        for (n, (_, _, outputs)) in wirings.into_iter().enumerate() {
             let wired = &mut modules[n];
 
             for output in outputs {
                 let output = FixedLengthAsciiString::new(output);
                 let inbound_index = inbound_count.entry(output.clone()).or_insert(0usize);
-                let outbound = module_indices.get(&output);
+                let to = *module_indices.get(&output).unwrap_or(&OUTSIDE_INDEX);
 
-                if let Some(to) = outbound {
-                    wired.wires.push(Wire {
-                        to: *to,
-                        inbound_index: *inbound_index,
-                    });
-                    *inbound_index += 1
-                }
+                wired.wires.push(Wire {
+                    to,
+                    inbound_index: *inbound_index,
+                });
+                *inbound_index += 1
             }
         }
 
@@ -229,35 +231,27 @@ fn part_2(input: &Input) -> usize {
 
     let mut pushes = 0;
     let mut input = input.clone();
-    let mut bt_cycle: Option<usize> = None;
-    let mut fr_cycle: Option<usize> = None;
-    let mut rv_cycle: Option<usize> = None;
-    let mut dl_cycle: Option<usize> = None;
 
-    while bt_cycle.is_none() || fr_cycle.is_none() || rv_cycle.is_none() || dl_cycle.is_none() {
+    let last_nand = input.modules.iter().position(|m| m.wires.len() == 1 && m.wires[0].to == OUTSIDE_INDEX).unwrap();
+    let mut feeders = HashMap::<FixedLengthAsciiString<2>, Option<usize>>::new();
+    for module in &input.modules {
+        if module.wires.len() == 1 && module.wires[0].to == last_nand {
+            feeders.insert(module.label.clone(), None);
+        }
+    }
+
+    while feeders.values().any(|it| it.is_none()) {
         pushes += 1;
         input.push_button(|Pulse { high, emitter, .. }| {
             if *high {
-                if emitter == "bt" {
-                    bt_cycle.get_or_insert(pushes);
-                }
-
-                if emitter == "fr" {
-                    fr_cycle.get_or_insert(pushes);
-                }
-
-                if emitter == "rv" {
-                    rv_cycle.get_or_insert(pushes);
-                }
-
-                if emitter == "dl" {
-                    dl_cycle.get_or_insert(pushes);
+                if let Some(opt) = feeders.get_mut(emitter) {
+                    *opt = Some(pushes)
                 }
             }
         })
     }
 
-    dl_cycle.unwrap() * rv_cycle.unwrap() * fr_cycle.unwrap() * bt_cycle.unwrap()
+    feeders.values().map(|x| x.unwrap()).product()
 }
 
 nom_solution!(parse_and_reformat, part_1, part_2);
