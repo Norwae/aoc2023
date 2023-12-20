@@ -193,24 +193,49 @@ fn part_1(input: &Input) -> usize {
 }
 
 fn part_2(input: &Input) -> usize {
+    /* observations:
+
+    rx is fed into by a single NAND (rs),
+    which is in turn fed by NANDs (bt, dl, fr, rv), each servicing it individually
+
+    There are 4 additional NANDs in the network, with significant fan-out
+    mj, qs, rd, cs.
+
+    There are counter-chains of flip-flops which feed into each other, and into collector nodes... as well
+    as the "chaos factors of the 4 rogue NANDs
+     */
+
     let mut pushes = 0;
-    let mut rx_received = false;
     let mut input = input.clone();
-    while !rx_received {
+    let mut bt_cycle: Option<usize> = None;
+    let mut fr_cycle: Option<usize> = None;
+    let mut rv_cycle: Option<usize> = None;
+    let mut dl_cycle: Option<usize> = None;
+
+    while  bt_cycle.is_none() || fr_cycle.is_none() || rv_cycle.is_none() || dl_cycle.is_none() {
         pushes += 1;
+        input.push_button(|Pulse{high, emitter, ..}|{
+            if *high {
+                if emitter == "bt" {
+                    bt_cycle.get_or_insert(pushes);
+                }
 
-        if (pushes % 10000) == 0 {
-            println!("{}...", pushes)
-        }
+                if emitter == "fr" {
+                    fr_cycle.get_or_insert(pushes);
+                }
 
-        input.push_button(|Pulse{high, receiver, ..}|{
-            if receiver == "rx" && !*high {
-                rx_received = true
+                if emitter == "rv" {
+                    rv_cycle.get_or_insert(pushes);
+                }
+
+                if emitter == "dl" {
+                    dl_cycle.get_or_insert(pushes);
+                }
             }
         })
     }
 
-    pushes
+    dl_cycle.unwrap() * rv_cycle.unwrap() * fr_cycle.unwrap() * bt_cycle.unwrap()
 }
 
-nom_solution!(parse_and_reformat, part_1);
+nom_solution!(parse_and_reformat, part_1, part_2);
