@@ -39,11 +39,11 @@ struct Pulse {
 }
 
 impl WiredModule {
-    fn process_pulse(&mut self, high: bool, to_slot: usize, mut enqueue: impl FnMut(Pulse)) {
+    fn process_pulse(&mut self, high: bool, to_slot: usize, queue: &mut VecDeque<Pulse>) {
         match &mut self.module {
             Broadcaster => {
                 for Wire { to, inbound_index } in self.wires.iter() {
-                    enqueue(Pulse {
+                    queue.push_back(Pulse {
                         emitter: self.label.clone(),
                         receiver: *to,
                         to_slot: *inbound_index,
@@ -55,7 +55,7 @@ impl WiredModule {
                 if !high {
                     *memory = !*memory;
                     for Wire { to, inbound_index } in self.wires.iter() {
-                        enqueue(Pulse {
+                        queue.push_back(Pulse {
                             emitter: self.label.clone(),
                             receiver: *to,
                             to_slot: *inbound_index,
@@ -69,7 +69,7 @@ impl WiredModule {
                 let all_high = latest_inputs.iter().all(|v| *v);
 
                 for Wire { to, inbound_index } in self.wires.iter() {
-                    enqueue(Pulse {
+                    queue.push_back(Pulse {
                         emitter: self.label.clone(),
                         receiver: *to,
                         to_slot: *inbound_index,
@@ -106,7 +106,7 @@ impl Input {
             on_pulse(&next);
             let handling_module = self.modules.get_mut(next.receiver);
             if let Some(wm) = handling_module {
-                wm.process_pulse(next.high, next.to_slot, |p| queue.push_back(p))
+                wm.process_pulse(next.high, next.to_slot, &mut queue)
             }
         }
     }
