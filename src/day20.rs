@@ -245,7 +245,7 @@ fn part_2(input: &Input) -> usize {
         input.push_button(|Pulse { high, emitter, .. }| {
             if *high {
                 if let Some(opt) = feeders.get_mut(emitter) {
-                    *opt = Some(pushes)
+                    opt.get_or_insert(pushes);
                 }
             }
         })
