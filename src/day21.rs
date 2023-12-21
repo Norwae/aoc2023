@@ -29,4 +29,31 @@ fn parse(input: &str) -> Input {
     Input { start, limit, rocks }
 }
 
+fn part1(input: &Input) -> usize {
+    let mut queue = VecDeque::from([(input.start, 64)]);
+    let mut ending_positions = HashSet::new();
+
+    while let Some((position, steps)) = queue.pop_front() {
+        for d1 in Direction::ALL {
+            let position = position + d1;
+            let steps = steps - 1;
+            if !input.rocks.contains(&position) {
+                for d2 in Direction::ALL {
+                    let position = position + d2;
+                    let steps = steps - 1;
+
+                    if !input.rocks.contains(&position)
+                        && ending_positions.insert(position)
+                        && steps > 0
+                    {
+                        queue.push_back((position, steps))
+                    }
+                }
+            }
+        }
+    }
+
+    ending_positions.len()
+}
+
 simple_solution!(parse, part1);
