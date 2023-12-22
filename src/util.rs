@@ -79,6 +79,20 @@ impl Direction {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct Index2D(pub i32, pub i32);
 
+impl Index2D {
+    pub fn shift_into_range(mut self, start: Index2D, end: Index2D) -> Self {
+        if self.0 < 0 || self.0 > end.0 {
+            self.0 = (self.0 + end.0) % end.0
+        }
+
+        if self.1 < 0 || self.1 > end.1 {
+            self.1 = (self.1 + end.1) % end.1
+        }
+
+        self
+    }
+}
+
 
 impl<T: CoordNum + From<i32>> Into<Coord<T>> for Index2D {
     fn into(self) -> Coord<T> {
@@ -140,6 +154,12 @@ impl<T> Flat2DArray<T> {
 
     fn linearize_index(&self, x: i32, y: i32) -> usize {
         y as usize * self.columns + x as usize
+    }
+}
+
+impl <T: Default + Clone> Flat2DArray<T> {
+    pub fn new(rows: usize, columns: usize) -> Self {
+        Self { contents: vec![T::default(); rows * columns], out_of_bounds_element: T::default(), columns}
     }
 }
 
