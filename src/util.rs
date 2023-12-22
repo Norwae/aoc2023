@@ -148,6 +148,10 @@ impl<T> Flat2DArray<T> {
         &self.contents
     }
 
+    pub fn into_vec(self) -> Vec<T> {
+        self.contents
+    }
+
     pub fn transpose(&self) -> Transposed<T> {
         Transposed(self)
     }
