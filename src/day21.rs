@@ -1,10 +1,34 @@
+use std::cell::{Ref, RefCell};
 use std::collections::{HashSet, VecDeque};
-use crate::util::{Direction, Flat2DArray, Index2D};
-use crate::util::Direction::{EAST, NORTH, SOUTH, WEST};
+
+use crate::util::{Direction, Flat2DArray, Index2D, TwoDimensional};
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+enum Reachability {
+    Outside,
+    Unreachable,
+    Reachable(usize),
+}
 
 #[derive(Debug)]
 struct Input {
     rocks: HashSet<Index2D>,
+    step_counts: RefCell<Option<Flat2DArray<Reachability>>>,
+}
+
+impl Input {
+    fn step_counts(&self) -> Ref<Flat2DArray<Reachability>> {
+        let mut step_counts = self.step_counts.borrow_mut();
+        step_counts.get_or_insert_with(|| {
+            build_map_for_rocks(&self.rocks)
+        });
+
+        drop(step_counts);
+
+        let step_counts = self.step_counts.borrow();
+
+        Ref::map(step_counts, |sc| sc.as_ref().unwrap())
+    }
 }
 
 fn parse(input: &str) -> Input {
@@ -18,73 +42,74 @@ fn parse(input: &str) -> Input {
         }
     }
 
-    Input { rocks }
+    Input { rocks, step_counts: RefCell::new(None) }
 }
 
 fn part1(input: &Input) -> usize {
-    let queue = VecDeque::from([(Index2D(65, 65), 64, 0)]);
-    consume_queue_double_steps(&input.rocks, queue, |x| x).1
+    let step_counts = input.step_counts();
+
+    step_counts.as_slice().iter().filter(|n| if let Reachability::Reachable(n) = n {
+        let n = *n;
+        n <= 64 && n % 2 == 0
+    } else {
+        false
+    }).count()
 }
 
 fn part2(input: &Input) -> usize {
-    // 131 should do it too, but I want it to starve of input to avoid any weird corner cases
-    let queue = VecDeque::from([(Index2D(65, 65), 9999, 0)]);
-    let flood_filled = consume_queue_double_steps(&input.rocks, queue, |Index2D(mut y, mut x): Index2D| {
-        if x < 0 {
-            x += 131;
-        }
-        if y < 0 {
-            y += 131
-        }
+    let step_counts = input.step_counts();
+    let mut center_diamond_even = 0usize;
+    let mut center_diamond_odd = 0usize;
+    let mut corner_diamond_even = 0usize;
+    let mut corner_diamond_odd = 0usize;
 
-        if x >= 131 {
-            x -= 131
+    for r in step_counts.as_slice() {
+        if let Reachability::Reachable(n) = r {
+            let n = *n;
+            let target = if n % 2 == 0 {
+                if n <= 64 {
+                    &mut center_diamond_even
+                } else {
+                    &mut center_diamond_odd
+                }
+            } else {
+                if n <= 64 {
+                    &mut corner_diamond_even
+                } else {
+                    &mut corner_diamond_odd
+                }
+            };
+            *target += 1;
         }
+    }
 
-        if y >= 131 {
-            y -= 131
-        }
+    dbg!(corner_diamond_odd, corner_diamond_even, corner_diamond_odd, center_diamond_even);
 
-        Index2D(y, x)
-    }).0;
+    let sum = center_diamond_odd  // initial migration to the 4 edges
 
     42
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum VisitStatus {
-    Distance(usize),
-    Unvisited,
-}
+fn build_map_for_rocks(rocks: &HashSet<Index2D>) -> Flat2DArray<Reachability> {
+    let mut queue = VecDeque::from([(Index2D(65, 65), 0)]);
+    let mut reachability = Flat2DArray::from_data(Reachability::Outside, vec![Reachability::Unreachable; 131 * 131], 131);
 
-fn consume_queue_double_steps(rocks: &HashSet<Index2D>, mut queue: VecDeque<(Index2D, i32, usize)>, shift: impl Fn(Index2D) -> Index2D) -> (Flat2DArray<VisitStatus>, usize) {
-    let mut record = Flat2DArray::from_data(VisitStatus::Unvisited, vec![VisitStatus::Unvisited; 131 * 131], 131);
-    let mut count = 0usize;
+    while let Some((idx, steps)) = queue.pop_front() {
+        if reachability[idx] != Reachability::Unreachable {
+            continue;
+        }
+        reachability[idx] = Reachability::Reachable(steps);
 
-    while let Some((position, ttl, steps_taken)) = queue.pop_front() {
-        for d1 in Direction::ALL {
-            let position = shift(position + d1);
-            if !rocks.contains(&position) && record[position] == VisitStatus::Unvisited {
-                record[position] = VisitStatus::Distance(steps_taken + 1);
-
-                for d2 in Direction::ALL {
-                    let position = shift(position + d2);
-
-
-                    if !rocks.contains(&position)
-                        && record[position] == VisitStatus::Unvisited {
-                        count += 1;
-                        record[position] = VisitStatus::Distance(steps_taken + 2);
-                        if ttl > 2 {
-                            queue.push_back((position, ttl - 2, steps_taken + 2))
-                        }
-                    }
-                }
+        for d in Direction::ALL {
+            let neighbour = idx + d;
+            if !rocks.contains(&neighbour) {
+                queue.push_back((neighbour, steps + 1))
             }
         }
     }
 
-    (record, count)
+    reachability
 }
+
 
 simple_solution!(parse, part1, part2);
