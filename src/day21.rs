@@ -90,7 +90,7 @@ fn part2(input: &Input) -> usize {
     let corner_diamonds = full_steps * full_steps + full_steps - 1;
 
     center_diamonds_odd * center_diamond_odd +
-        center_diamonds_even + center_diamond_even +
+        center_diamonds_even * center_diamond_even +
         corner_diamonds * corner_diamond_even // equal value to odd
 }
 
