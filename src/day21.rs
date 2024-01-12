@@ -83,7 +83,7 @@ fn part2(input: &Input) -> usize {
         }
     }
 
-    let full_steps = 26501300usize;
+    let full_steps = 26501300usize / 151;
 
     let center_diamonds_odd = (full_steps + 1) * (full_steps + 1);
     let center_diamonds_even = full_steps * full_steps;
