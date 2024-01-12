@@ -83,11 +83,15 @@ fn part2(input: &Input) -> usize {
         }
     }
 
-    dbg!(corner_diamond_odd, corner_diamond_even, corner_diamond_odd, center_diamond_even);
+    let full_steps = 26501300usize;
 
-    let sum = center_diamond_odd  // initial migration to the 4 edges
+    let center_diamonds_odd = (full_steps + 1) * (full_steps + 1);
+    let center_diamonds_even = full_steps * full_steps;
+    let corner_diamonds = full_steps * full_steps + full_steps - 1;
 
-    42
+    center_diamonds_odd * center_diamond_odd +
+        center_diamonds_even + center_diamond_even +
+        corner_diamonds * corner_diamond_even // equal value to odd
 }
 
 fn build_map_for_rocks(rocks: &HashSet<Index2D>) -> Flat2DArray<Reachability> {
